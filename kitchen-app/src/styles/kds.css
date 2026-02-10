@@ -1,0 +1,416 @@
+/* ============================================
+   KITCHEN DISPLAY SYSTEM (KDS) STYLES
+   ============================================ */
+
+.kds-page {
+  min-height: 100vh;
+  padding: 20px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  position: relative;
+}
+
+/* ============================================
+   KDS HEADER
+   ============================================ */
+.kds-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.kds-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.kds-live-indicator {
+  width: 12px;
+  height: 12px;
+  background: #10b981;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+.kds-stats {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.kds-stat {
+  text-align: center;
+}
+
+.kds-stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: white;
+  display: block;
+}
+
+.kds-stat-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.kds-time {
+  font-size: 24px;
+  font-weight: 600;
+  color: white;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================
+   KDS FILTERS
+   ============================================ */
+.kds-filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.kds-filter-btn {
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kds-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.kds-filter-btn.active {
+  background: var(--gradient-1);
+  border-color: transparent;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* ============================================
+   KDS GRID
+   ============================================ */
+.kds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+/* ============================================
+   KDS ORDER CARD
+   ============================================ */
+.kds-order-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.kds-order-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--order-color);
+}
+
+.kds-order-card.new {
+  --order-color: #f59e0b;
+  animation: newOrderPulse 1s ease-out;
+  border-color: #f59e0b;
+}
+
+.kds-order-card.preparing {
+  --order-color: #3b82f6;
+}
+
+.kds-order-card.ready {
+  --order-color: #10b981;
+}
+
+.kds-order-card.urgent {
+  animation: urgentPulse 2s infinite;
+  border-color: #ef4444;
+}
+
+@keyframes newOrderPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 20px rgba(245, 158, 11, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
+
+@keyframes urgentPulse {
+  0%, 100% {
+    border-color: #ef4444;
+  }
+  50% {
+    border-color: #fca5a5;
+  }
+}
+
+/* ============================================
+   ORDER CARD CONTENT
+   ============================================ */
+.kds-order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.kds-order-number {
+  font-size: 24px;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.kds-table-info {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+
+.kds-timer {
+  text-align: right;
+}
+
+.kds-elapsed-time {
+  font-size: 32px;
+  font-weight: 800;
+  color: white;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.kds-elapsed-time.warning {
+  color: #f59e0b;
+}
+
+.kds-elapsed-time.danger {
+  color: #ef4444;
+}
+
+.kds-timer-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================
+   ORDER ITEMS
+   ============================================ */
+.kds-items {
+  margin: 16px 0;
+}
+
+.kds-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  border-left: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.kds-item-qty {
+  font-size: 20px;
+  font-weight: 800;
+  color: white;
+  min-width: 32px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.kds-item-details {
+  flex: 1;
+}
+
+.kds-item-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.kds-item-instructions {
+  font-size: 13px;
+  color: #fbbf24;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+/* ============================================
+   ORDER ACTIONS
+   ============================================ */
+.kds-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.kds-action-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 10px;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kds-btn-start {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.kds-btn-ready {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.kds-btn-bump {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: white;
+}
+
+.kds-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.kds-action-btn:active {
+  transform: scale(0.95);
+}
+
+/* ============================================
+   EMPTY STATE
+   ============================================ */
+.kds-empty {
+  text-align: center;
+  padding: 80px 20px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.kds-empty-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+  opacity: 0.3;
+}
+
+.kds-empty-text {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.kds-empty-subtext {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+/* ============================================
+   SOUND NOTIFICATION INDICATOR
+   ============================================ */
+.kds-sound-indicator {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  background: rgba(16, 185, 129, 0.2);
+  border: 2px solid #10b981;
+  border-radius: 12px;
+  color: #10b981;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1000;
+}
+
+.kds-sound-indicator.muted {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+@media (max-width: 768px) {
+  .kds-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .kds-stats {
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .kds-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kds-title {
+    font-size: 24px;
+  }
+}
