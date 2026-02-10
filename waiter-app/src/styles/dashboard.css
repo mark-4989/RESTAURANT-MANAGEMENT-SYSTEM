@@ -1,0 +1,261 @@
+/* ============================================ */
+/* DASHBOARD PAGE STYLES                       */
+/* ============================================ */
+
+.waiter-dashboard {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  color: white;
+}
+
+.dashboard-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-header p {
+  opacity: 0.9;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.stat-card.green { border-left: 5px solid #10b981; }
+.stat-card.blue { border-left: 5px solid #3b82f6; }
+.stat-card.purple { border-left: 5px solid #8b5cf6; }
+.stat-card.orange { border-left: 5px solid #f59e0b; }
+
+.stat-icon {
+  font-size: 2.5rem;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.section {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-header h2 {
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #10b981;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+
+.orders-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.order-card {
+  background: white;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-radius: 15px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.order-card:hover {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+}
+
+.order-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+}
+
+.order-number {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.order-card-body {
+  margin-bottom: 1rem;
+}
+
+.order-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.info-label {
+  color: #666;
+}
+
+.info-value {
+  color: #333;
+  font-weight: 600;
+}
+
+.info-value-large {
+  color: #10b981;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.order-items-preview {
+  background: rgba(16, 185, 129, 0.05);
+  padding: 0.75rem;
+  border-radius: 10px;
+}
+
+.item-preview {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.item-preview.more {
+  color: #10b981;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.recent-orders-table {
+  overflow-x: auto;
+}
+
+.recent-orders-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.recent-orders-table th {
+  text-align: left;
+  padding: 0.75rem;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.recent-orders-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.order-number-cell {
+  font-weight: 700;
+  color: #10b981;
+}
+
+.total-cell {
+  font-weight: 700;
+  color: #333;
+}
+
+.time-cell {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.quick-actions {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 2rem;
+}
+
+.quick-actions h3 {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.action-btn {
+  padding: 1rem;
+  background: white;
+  border: 2px solid #10b981;
+  border-radius: 10px;
+  color: #10b981;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.action-btn:hover {
+  background: #10b981;
+  color: white;
+  transform: translateY(-3px);
+}
+
+.action-icon {
+  font-size: 2rem;
+}
