@@ -1,0 +1,273 @@
+/* driver-app/src/styles/active-delivery.css */
+
+.active-delivery {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px);
+  position: relative;
+}
+
+.map-container {
+  flex: 1;
+  position: relative;
+  min-height: 400px;
+}
+
+.driver-marker {
+  font-size: 2rem;
+  animation: bounce 1s infinite;
+}
+
+.destination-marker {
+  font-size: 2rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.delivery-info-card {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.2);
+  max-height: 60vh;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1;
+}
+
+.card-header h2 {
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.delivery-status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.info-section {
+  margin-bottom: 1.5rem;
+}
+
+.info-section h3 {
+  font-size: 1.2rem;
+  color: #10b981;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid rgba(16, 185, 129, 0.2);
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-row .label {
+  font-weight: 600;
+  color: #666;
+}
+
+.info-row .value {
+  color: #333;
+  font-weight: 600;
+  text-align: right;
+}
+
+.info-row .value.large {
+  font-size: 1.3rem;
+  color: #10b981;
+}
+
+.info-row .value a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.info-row .value a:hover {
+  text-decoration: underline;
+}
+
+.address-box {
+  background: rgba(16, 185, 129, 0.1);
+  padding: 1rem;
+  border-radius: 10px;
+  border-left: 4px solid #10b981;
+}
+
+.address-box p {
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.address-box p:last-child {
+  margin-bottom: 0;
+}
+
+.landmark {
+  color: #059669 !important;
+  font-weight: 600;
+}
+
+.instructions-box {
+  background: rgba(251, 191, 36, 0.1);
+  padding: 1rem;
+  border-radius: 10px;
+  border-left: 4px solid #f59e0b;
+  color: #333;
+  font-style: italic;
+}
+
+.card-actions {
+  padding: 1.5rem;
+  border-top: 2px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  position: sticky;
+  bottom: 0;
+  background: white;
+  z-index: 1;
+}
+
+.status-update-btn {
+  flex: 1;
+  min-width: 200px;
+  padding: 1rem;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.status-update-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.btn-navigate {
+  flex: 1;
+  min-width: 200px;
+  padding: 1rem;
+  background: white;
+  border: 2px solid #10b981;
+  color: #10b981;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-navigate:hover {
+  background: #10b981;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.btn-back {
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-back:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+}
+
+/* Mobile Optimization */
+@media (max-width: 768px) {
+  .active-delivery {
+    height: calc(100vh - 70px);
+  }
+
+  .delivery-info-card {
+    max-height: 70vh;
+  }
+
+  .card-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .card-actions {
+    flex-direction: column;
+  }
+
+  .status-update-btn,
+  .btn-navigate {
+    min-width: 100%;
+  }
+
+  .info-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .info-row .value {
+    text-align: left;
+  }
+}
+
+/* Tablet */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .delivery-info-card {
+    max-width: 500px;
+    right: 1rem;
+    left: auto;
+    bottom: 1rem;
+    border-radius: 20px;
+    max-height: 80vh;
+  }
+}
