@@ -1,0 +1,251 @@
+/* ============================================
+   PREORDERS & RESERVATIONS PAGE - DARK THEME
+   Customer App Styles
+   ============================================ */
+
+@import url('./dark-theme-master.css');
+@import url('./font-imports.css');
+
+
+
+.preorders-page {
+  min-height: 100vh;
+  padding: 5rem 1.5rem 3rem;
+  background: var(--gradient-bg-primary);
+  position: relative;
+}
+
+.preorders-header {
+  text-align: center;
+  color: var(--text-primary);
+  margin-bottom: 3rem;
+}
+
+.preorders-header h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.preorders-header p {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 3rem;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 0.875rem 1.75rem;
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(12px);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-full);
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--brand-primary);
+  transform: translateY(-2px);
+}
+
+.tab.active {
+  background: var(--gradient-primary);
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+}
+
+/* Form Container */
+.form-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+}
+
+/* Form Card */
+.form-card {
+  background: rgba(30, 30, 40, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 2.5rem;
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-xl);
+}
+
+.form-card h2 {
+  font-size: 2rem;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+}
+
+.form-description {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+}
+
+/* Form Groups */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+  background: var(--input-bg-focus);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.form-group textarea {
+  resize: vertical;
+  font-family: inherit;
+  min-height: 100px;
+}
+
+.form-group small {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Submit Button */
+.submit-btn {
+  width: 100%;
+  padding: 1.25rem;
+  background: var(--gradient-primary);
+  color: var(--text-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+}
+
+.submit-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.6);
+}
+
+/* Info Card */
+.info-card {
+  background: rgba(30, 30, 40, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 2rem;
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-xl);
+}
+
+.info-card h3 {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+}
+
+.info-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.info-card li {
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  transition: all 0.3s ease;
+}
+
+.info-card li:hover {
+  background: rgba(99, 102, 241, 0.2);
+  transform: translateX(5px);
+}
+
+/* Mobile Responsive */
+@media (max-width: 968px) {
+  .preorders-page {
+    padding: 3rem 1rem 2rem;
+  }
+
+  .form-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .tabs {
+    flex-direction: column;
+  }
+  
+  .tab {
+    width: 100%;
+  }
+  
+  .preorders-header h1 {
+    font-size: 2.5rem;
+  }
+  
+  .form-card {
+    padding: 1.5rem;
+  }
+}

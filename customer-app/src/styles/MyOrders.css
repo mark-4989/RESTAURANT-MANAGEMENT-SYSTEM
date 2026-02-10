@@ -1,0 +1,527 @@
+/* customer-app/src/styles/MyOrders.css - THEME-ENABLED VERSION */
+
+.my-orders-page {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  background: var(--gradient-bg-primary);
+}
+
+.my-orders-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Header */
+.my-orders-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--text-primary);
+}
+
+.my-orders-header h1 {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: var(--font-weight-extrabold);
+  margin-bottom: 0.5rem;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.my-orders-header p {
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  opacity: 0.9;
+}
+
+/* Loading */
+.loading-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-bg-primary);
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid var(--border-primary);
+  border-top-color: var(--brand-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Category Pills */
+.category-pills {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.category-pill {
+  padding: 0.75rem 1.5rem;
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(10px);
+  color: var(--text-secondary);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-full);
+  font-family: var(--font-primary);
+  font-size: 1rem;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.category-pill:hover {
+  background: var(--glass-bg);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--brand-primary);
+}
+
+.category-pill.active {
+  background: var(--gradient-primary);
+  color: var(--text-inverse);
+  border-color: transparent;
+  box-shadow: var(--shadow-hover);
+}
+
+/* No Orders State */
+.no-orders {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-lg);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.no-orders-icon {
+  font-size: 5rem;
+  margin-bottom: 1rem;
+}
+
+.no-orders h3 {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 0.5rem;
+}
+
+.no-orders p {
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+}
+
+/* Orders List */
+.orders-list {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* Order Card */
+.order-card {
+  position: relative;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border-radius: var(--radius-2xl);
+  padding: 1.5rem;
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s ease;
+}
+
+.order-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--brand-primary);
+  background: var(--bg-card-hover);
+}
+
+/* Live Indicator */
+.live-indicator {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--status-success-bg);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--status-success-border);
+}
+
+.pulse-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--status-success);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+.live-indicator svg {
+  color: var(--status-success);
+}
+
+.live-text {
+  color: var(--status-success);
+  font-weight: var(--font-weight-semibold);
+  font-size: 0.9rem;
+}
+
+/* Order Card Header */
+.order-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--border-primary);
+}
+
+.order-number {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.order-type-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-inverse);
+}
+
+.order-type-badge.dine-in {
+  background: var(--brand-primary);
+}
+
+.order-type-badge.delivery {
+  background: var(--status-warning);
+}
+
+.order-type-badge.pickup {
+  background: var(--status-success);
+}
+
+.order-type-badge.preorder {
+  background: #8b5cf6;
+}
+
+.order-total-section {
+  text-align: right;
+}
+
+.order-price {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-primary);
+}
+
+.order-date {
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  margin-top: 0.25rem;
+}
+
+/* Order Details */
+.order-details {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+.detail-label {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+  font-family: var(--font-body);
+}
+
+.detail-value {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-primary);
+}
+
+.address-truncate {
+  text-align: right;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  color: var(--text-inverse);
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Track Button */
+.track-button {
+  width: 100%;
+  padding: 1rem;
+  background: var(--gradient-success);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-primary);
+  font-weight: var(--font-weight-bold);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+  box-shadow: var(--shadow-md);
+}
+
+.track-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--overlay-heavy);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-2xl);
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-primary);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal Header */
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 2px solid var(--border-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
+}
+
+.modal-subtitle {
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.close-modal-btn {
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--border-primary);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.close-modal-btn:hover {
+  background: var(--status-error-bg);
+  border-color: var(--status-error);
+  color: var(--status-error);
+  transform: rotate(90deg);
+}
+
+/* Map */
+.map-container {
+  flex: 1;
+  min-height: 500px;
+}
+
+/* Modal Footer */
+.modal-footer {
+  padding: 1.5rem;
+  background: var(--bg-secondary);
+  border-top: 2px solid var(--border-primary);
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.footer-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+}
+
+.footer-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+}
+
+.footer-value {
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  font-family: var(--font-primary);
+  margin-top: 0.25rem;
+}
+
+.google-maps-btn {
+  width: 100%;
+  padding: 1rem;
+  background: var(--gradient-primary);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-primary);
+  font-weight: var(--font-weight-bold);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+}
+
+.google-maps-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .my-orders-header h1 {
+    font-size: 2rem;
+  }
+
+  .category-pills {
+    flex-direction: column;
+  }
+
+  .category-pill {
+    width: 100%;
+  }
+
+  .order-card {
+    padding: 1rem;
+  }
+
+  .order-card-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .order-total-section {
+    text-align: left;
+  }
+
+  .live-indicator {
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .map-container {
+    min-height: 400px;
+  }
+}

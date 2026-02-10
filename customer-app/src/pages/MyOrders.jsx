@@ -1,0 +1,435 @@
+// customer-app/src/pages/MyOrders.jsx - COMPLETE THEME-ENABLED VERSION
+import React, { useState, useEffect, useRef } from 'react';
+import { useUser } from '@clerk/clerk-react';
+import { MapPin, X, Navigation, Phone, Package, Clock, Radio, Truck } from 'lucide-react';
+import '../styles/MyOrders.css';
+
+const MyOrders = () => {
+  const { user } = useUser();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [trackingOrder, setTrackingOrder] = useState(null);
+  const [driverLocation, setDriverLocation] = useState(null);
+  
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const driverMarkerRef = useRef(null);
+  const destinationMarkerRef = useRef(null);
+  const socketRef = useRef(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchOrders();
+      loadMapboxScript();
+      initializeWebSocket();
+    }
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close();
+      }
+    };
+  }, [user]);
+
+  const initializeWebSocket = () => {
+    socketRef.current = new WebSocket('ws://localhost:5000');
+    
+    socketRef.current.onopen = () => {
+      console.log('📡 Connected to tracking server');
+    };
+
+    socketRef.current.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'DRIVER_LOCATION_UPDATE' && trackingOrder && data.orderId === trackingOrder._id) {
+          setDriverLocation(data.location);
+          updateDriverMarker(data.location);
+        }
+
+        if (data.type === 'ORDER_STATUS_UPDATE' || data.type === 'DELIVERY_STATUS_UPDATE') {
+          fetchOrders();
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    };
+
+    socketRef.current.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+  };
+
+  const loadMapboxScript = () => {
+    if (!window.mapboxgl) {
+      const script = document.createElement('script');
+      script.src = 'https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js';
+      script.async = true;
+      document.head.appendChild(script);
+
+      const link = document.createElement('link');
+      link.href = 'https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css';
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      const customerName = user.fullName || user.firstName || 'Guest';
+      const response = await fetch(`http://localhost:5000/api/orders?customerName=${encodeURIComponent(customerName)}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        const sortedOrders = data.data.sort((a, b) => 
+          new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        setOrders(sortedOrders);
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const initializeMap = (order) => {
+    if (!mapRef.current || !window.mapboxgl || !order.deliveryLng || !order.deliveryLat) return;
+
+    const mapboxgl = window.mapboxgl;
+    mapboxgl.accessToken = 'pk.eyJ1IjoiY2hlZmRyZWR6IiwiYSI6ImNtaDRwY2JhZzFvYXFmMXNiOTVmYnQ5aHkifQ.wdXtoBRNl0xYhiPAZxDRjA';
+
+    if (mapInstanceRef.current) mapInstanceRef.current.remove();
+
+    mapInstanceRef.current = new mapboxgl.Map({
+      container: mapRef.current,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [order.deliveryLng, order.deliveryLat],
+      zoom: 13
+    });
+
+    mapInstanceRef.current.addControl(new mapboxgl.NavigationControl());
+
+    destinationMarkerRef.current = new mapboxgl.Marker({ color: '#ef4444' })
+      .setLngLat([order.deliveryLng, order.deliveryLat])
+      .setPopup(new mapboxgl.Popup().setHTML(`
+        <div style="padding: 8px;">
+          <strong style="color: #333;">📍 Your Delivery Location</strong><br/>
+          <span style="color: #666; font-size: 0.9rem;">${order.deliveryAddress}</span>
+        </div>
+      `))
+      .addTo(mapInstanceRef.current);
+
+    if (driverLocation) {
+      updateDriverMarker(driverLocation);
+    }
+  };
+
+  const updateDriverMarker = (location) => {
+    if (!mapInstanceRef.current || !window.mapboxgl) return;
+
+    if (driverMarkerRef.current) {
+      driverMarkerRef.current.setLngLat([location.lng, location.lat]);
+    } else {
+      driverMarkerRef.current = new window.mapboxgl.Marker({ color: '#10b981' })
+        .setLngLat([location.lng, location.lat])
+        .setPopup(new window.mapboxgl.Popup().setHTML(`
+          <div style="padding: 8px;">
+            <strong style="color: #333;">🚗 Driver Location</strong><br/>
+            <span style="color: #666; font-size: 0.9rem;">On the way to you!</span>
+          </div>
+        `))
+        .addTo(mapInstanceRef.current);
+    }
+
+    if (destinationMarkerRef.current) {
+      const bounds = new window.mapboxgl.LngLatBounds();
+      bounds.extend([location.lng, location.lat]);
+      bounds.extend(destinationMarkerRef.current.getLngLat());
+      mapInstanceRef.current.fitBounds(bounds, { padding: 100 });
+    }
+  };
+
+  const openTracking = (order) => {
+    setTrackingOrder(order);
+    setDriverLocation(null);
+    setTimeout(() => initializeMap(order), 100);
+
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({
+        type: 'SUBSCRIBE_ORDER',
+        orderId: order._id
+      }));
+    }
+  };
+
+  const dineInOrders = orders.filter(o => o.orderType === 'dine-in');
+  const deliveryOrders = orders.filter(o => o.orderType === 'delivery');
+  const pickupOrders = orders.filter(o => o.orderType === 'pickup');
+  const preOrders = orders.filter(o => o.orderType === 'preorder');
+
+  const getCategoryOrders = () => {
+    switch(selectedCategory) {
+      case 'dine-in': return dineInOrders;
+      case 'delivery': return deliveryOrders;
+      case 'pickup': return pickupOrders;
+      case 'preorder': return preOrders;
+      default: return orders;
+    }
+  };
+
+  const formatPrice = (price) => `KSh ${price?.toLocaleString() || 0}`;
+  const formatDate = (date) => new Date(date).toLocaleString();
+
+  const getStatusColor = (status) => {
+    const colors = {
+      pending: 'var(--status-pending)',
+      confirmed: 'var(--status-info)',
+      preparing: '#8b5cf6',
+      ready: 'var(--status-ready)',
+      completed: 'var(--status-completed)',
+      cancelled: 'var(--status-cancelled)'
+    };
+    return colors[status] || 'var(--status-completed)';
+  };
+
+  const getDeliveryStatusColor = (status) => {
+    const colors = {
+      pending: 'var(--status-pending)',
+      assigned: 'var(--status-info)',
+      'picked-up': '#8b5cf6',
+      'on-the-way': 'var(--status-ready)',
+      delivered: '#22c55e',
+      cancelled: 'var(--status-cancelled)'
+    };
+    return colors[status] || 'var(--status-completed)';
+  };
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <div style={{ color: 'var(--text-primary)', fontSize: '1.5rem', marginTop: '1rem' }}>
+          Loading your orders...
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="my-orders-page">
+      <div className="my-orders-container">
+        {/* Header */}
+        <div className="my-orders-header">
+          <h1>📦 My Orders</h1>
+          <p>Track all your orders in one place</p>
+        </div>
+
+        {/* Category Pills */}
+        <div className="category-pills">
+          {[
+            { id: 'all', label: 'All Orders', icon: '📋', count: orders.length },
+            { id: 'dine-in', label: 'Dine-In', icon: '🍽️', count: dineInOrders.length },
+            { id: 'delivery', label: 'Delivery', icon: '🚚', count: deliveryOrders.length },
+            { id: 'pickup', label: 'Pickup', icon: '🚗', count: pickupOrders.length },
+            { id: 'preorder', label: 'Pre-Orders', icon: '📅', count: preOrders.length }
+          ].map(category => (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategory(category.id)}
+              className={`category-pill ${selectedCategory === category.id ? 'active' : ''}`}
+            >
+              {category.icon} {category.label} ({category.count})
+            </button>
+          ))}
+        </div>
+
+        {/* Orders List */}
+        <div className="orders-list">
+          {getCategoryOrders().length === 0 ? (
+            <div className="no-orders">
+              <div className="no-orders-icon">📦</div>
+              <h3>No orders in this category</h3>
+              <p>Start ordering to see your items here!</p>
+            </div>
+          ) : (
+            getCategoryOrders().map(order => (
+              <div key={order._id} className="order-card">
+                {/* Live Indicator */}
+                {order.orderType === 'delivery' && ['assigned', 'picked-up', 'on-the-way'].includes(order.deliveryStatus) && (
+                  <div className="live-indicator">
+                    <span className="pulse-dot"></span>
+                    <Radio size={14} />
+                    <span className="live-text">Live</span>
+                  </div>
+                )}
+
+                <div className="order-card-header">
+                  <div>
+                    <div className="order-number">{order.orderNumber}</div>
+                    <div className={`order-type-badge ${order.orderType}`}>
+                      {order.orderType === 'dine-in' ? '🍽️' : 
+                       order.orderType === 'delivery' ? '🚚' : 
+                       order.orderType === 'pickup' ? '🚗' : '📅'} 
+                      {order.orderType.toUpperCase()}
+                    </div>
+                  </div>
+                  <div className="order-total-section">
+                    <div className="order-price">{formatPrice(order.total)}</div>
+                    <div className="order-date">{formatDate(order.createdAt)}</div>
+                  </div>
+                </div>
+
+                {/* Order Details */}
+                <div className="order-details">
+                  <div className="detail-row">
+                    <span className="detail-label">Status:</span>
+                    <span 
+                      className="status-badge"
+                      style={{ background: getStatusColor(order.status) }}
+                    >
+                      {order.status.toUpperCase()}
+                    </span>
+                  </div>
+
+                  {order.orderType === 'delivery' && order.deliveryStatus && (
+                    <div className="detail-row">
+                      <span className="detail-label">Delivery Status:</span>
+                      <span 
+                        className="status-badge"
+                        style={{ background: getDeliveryStatusColor(order.deliveryStatus) }}
+                      >
+                        {order.deliveryStatus.toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+
+                  {order.orderType === 'dine-in' && order.tableNumber && (
+                    <div className="detail-row">
+                      <span className="detail-label">🍽️ Table:</span>
+                      <span className="detail-value">Table {order.tableNumber}</span>
+                    </div>
+                  )}
+
+                  {order.orderType === 'delivery' && (
+                    <>
+                      <div className="detail-row">
+                        <span className="detail-label">📍 Address:</span>
+                        <span className="detail-value address-truncate">
+                          {order.deliveryAddress?.substring(0, 40)}...
+                        </span>
+                      </div>
+                      {order.driverName && (
+                        <div className="detail-row">
+                          <span className="detail-label">🚗 Driver:</span>
+                          <span className="detail-value">{order.driverName}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {order.orderType === 'pickup' && (
+                    <>
+                      <div className="detail-row">
+                        <span className="detail-label">📅 Pickup Date:</span>
+                        <span className="detail-value">
+                          {order.pickupDate && new Date(order.pickupDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">⏰ Pickup Time:</span>
+                        <span className="detail-value">{order.pickupTime}</span>
+                      </div>
+                    </>
+                  )}
+
+                  {order.orderType === 'preorder' && (
+                    <div className="detail-row">
+                      <span className="detail-label">📅 Pre-order For:</span>
+                      <span className="detail-value">
+                        {order.preorderDate && new Date(order.preorderDate).toLocaleDateString()} at {order.preorderTime}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Track Order Button */}
+                {order.orderType === 'delivery' && order.deliveryStatus === 'on-the-way' && order.deliveryLng && order.deliveryLat && (
+                  <button onClick={() => openTracking(order)} className="track-button">
+                    <Navigation size={20} /> Track Delivery on Map (Live)
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Map Tracking Modal */}
+      {trackingOrder && (
+        <div className="modal-overlay" onClick={() => setTrackingOrder(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="modal-header">
+              <div>
+                <h2>🗺️ Live Tracking: {trackingOrder.orderNumber}</h2>
+                <p className="modal-subtitle">📍 {trackingOrder.deliveryAddress}</p>
+              </div>
+              <button onClick={() => setTrackingOrder(null)} className="close-modal-btn">
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Map */}
+            <div ref={mapRef} className="map-container" />
+
+            {/* Footer Info */}
+            <div className="modal-footer">
+              <div className="footer-grid">
+                <div className="footer-item">
+                  <Package size={24} style={{ color: 'var(--brand-primary)' }} />
+                  <div>
+                    <div className="footer-label">Order Total</div>
+                    <div className="footer-value">{formatPrice(trackingOrder.total)}</div>
+                  </div>
+                </div>
+
+                {trackingOrder.driverName && (
+                  <div className="footer-item">
+                    <Truck size={24} style={{ color: 'var(--status-success)' }} />
+                    <div>
+                      <div className="footer-label">Driver</div>
+                      <div className="footer-value">{trackingOrder.driverName}</div>
+                    </div>
+                  </div>
+                )}
+
+                {trackingOrder.driverPhone && (
+                  <div className="footer-item">
+                    <Phone size={24} style={{ color: 'var(--status-info)' }} />
+                    <div>
+                      <div className="footer-label">Contact</div>
+                      <div className="footer-value">{trackingOrder.driverPhone}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {trackingOrder.deliveryLat && trackingOrder.deliveryLng && (
+                <button
+                  onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${trackingOrder.deliveryLat},${trackingOrder.deliveryLng}`, '_blank')}
+                  className="google-maps-btn"
+                >
+                  🗺️ Open in Google Maps
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default MyOrders;
