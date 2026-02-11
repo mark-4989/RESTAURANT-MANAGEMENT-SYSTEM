@@ -11,16 +11,27 @@ const { initializeSocket } = require('./services/socketService');
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.IO with CORS
-const io = socketIo(server, {
-  cors: {
-    origin: [
+// Allowed origins - dynamically set for production
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+  ? [
+      process.env.FRONTEND_URL,
+      process.env.ADMIN_URL,
+      process.env.KITCHEN_URL,
+      process.env.WAITER_URL,
+      process.env.DRIVER_URL
+    ].filter(Boolean) // Remove undefined values
+  : [
       'http://localhost:5173', // Kitchen Display
       'http://localhost:5174', // Customer App
       'http://localhost:5175', // Admin Dashboard
       'http://localhost:5176', // Waiter Station
       'http://localhost:5177', // Driver App
-    ],
+    ];
+
+// Initialize Socket.IO with CORS
+const io = socketIo(server, {
+  cors: {
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true
   }
@@ -38,13 +49,7 @@ const PORT = process.env.PORT || 5000;
 // MIDDLEWARE
 // ============================================
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175',
-    'http://localhost:5176',
-    'http://localhost:5177',
-  ],
+  origin: allowedOrigins,
   credentials: true,
   optionsSuccessStatus: 200
 }));
@@ -60,6 +65,7 @@ app.get('/', (req, res) => {
     message: '🍽️ Welcome to DineSmart API!',
     status: 'Server is running smoothly',
     websockets: 'enabled',
+    environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
     endpoints: {
       menu: '/api/menu',
@@ -111,8 +117,13 @@ app.get('/api/health', (req, res) => {
 // ============================================
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/dinesmart', {});
+    if (!process.env.MONGODB_URI) {
+      throw new Error('MONGODB_URI environment variable is not defined');
+    }
+    
+    await mongoose.connect(process.env.MONGODB_URI, {});
     console.log('✅ MongoDB Connected Successfully!');
+    console.log('📍 Database:', mongoose.connection.name);
   } catch (error) {
     console.error('❌ MongoDB Connection Error:', error.message);
     if (process.env.NODE_ENV === 'production') {
@@ -168,14 +179,14 @@ app.use((req, res) => {
 // ============================================
 // START SERVER
 // ============================================
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`
   ╔═══════════════════════════════════════╗
   ║   🍽️  DineSmart API Server Started   ║
   ╠═══════════════════════════════════════╣
   ║   Port: ${PORT}                     
   ║   Environment: ${process.env.NODE_ENV || 'development'}
-  ║   URL: http://localhost:${PORT}
+  ║   Host: 0.0.0.0
   ╠═══════════════════════════════════════╣
   ║   📋 API ENDPOINTS:
   ║   • Menu: /api/menu
@@ -196,7 +207,7 @@ server.listen(PORT, () => {
   ║   🚗 Delivery System: ENABLED
   ║   📅 Reservations: ENABLED
   ║   📅 Pre-Orders: ENABLED
-  ║   📍 Live Tracking: ENABLED ← NEW!
+  ║   📍 Live Tracking: ENABLED
   ║   🔔 Real-time Updates: ENABLED
   ╚═══════════════════════════════════════╝
   `);
