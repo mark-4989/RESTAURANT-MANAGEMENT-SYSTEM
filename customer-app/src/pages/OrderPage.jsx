@@ -6,7 +6,8 @@ import { Truck, Package, Calendar, Search, Phone, MapPin, Plus, Minus, Trash2, S
 import { formatPrice } from '../data/menuData';
 import '../styles/orderpage.css';
 
-const MAPBOX_TOKEN = 'pk.eyJ1IjoiY2hlZmRyZWR6IiwiYSI6ImNtaDRwY2JhZzFvYXFmMXNiOTVmYnQ5aHkifQ.wdXtoBRNl0xYhiPAZxDRjA';
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const OrderPage = () => {
   const { user } = useUser();
@@ -56,7 +57,7 @@ const OrderPage = () => {
   const fetchMenu = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/menu');
+      const response = await fetch(`${API_URL}/menu`);
       const data = await response.json();
       
       let items = [];
@@ -313,7 +314,7 @@ const OrderPage = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/orders', {
+      const response = await fetch(`${API_URL}/orders`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(orderData)
