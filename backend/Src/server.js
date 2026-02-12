@@ -14,11 +14,18 @@ const server = http.createServer(app);
 // Allowed origins - dynamically set for production
 const allowedOrigins = process.env.NODE_ENV === 'production' 
   ? [
+      // Production URLs from environment variables
       process.env.FRONTEND_URL,
       process.env.ADMIN_URL,
       process.env.KITCHEN_URL,
       process.env.WAITER_URL,
-      process.env.DRIVER_URL
+      process.env.DRIVER_URL,
+      // Hardcoded production URLs (fallback)
+      'https://restaurant-management-system-zeta-ivory.vercel.app', // Customer App
+      'https://restaurant-management-system-xjmj.vercel.app',       // Admin Dashboard
+      'https://restaurant-management-system-rmf1.vercel.app',       // Kitchen App
+      'https://restaurant-management-system-9no5.vercel.app',       // Waiter Station
+      'https://restaurant-management-system-bomb.vercel.app',       // Driver App
     ].filter(Boolean) // Remove undefined values
   : [
       'http://localhost:5173', // Kitchen Display
@@ -42,7 +49,13 @@ const io = socketIo(server, {
       
       // In production, check against allowed origins
       if (process.env.NODE_ENV === 'production') {
-        if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+        // Check if origin is in allowed list
+        const isAllowed = allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*');
+        
+        // Also allow any Vercel preview deployments (*.vercel.app)
+        const isVercelPreview = origin.includes('vercel.app');
+        
+        if (isAllowed || isVercelPreview) {
           callback(null, true);
         } else {
           console.log('❌ Blocked origin:', origin);
@@ -77,7 +90,13 @@ app.use(cors({
     
     // In production, check against allowed origins
     if (process.env.NODE_ENV === 'production') {
-      if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+      // Check if origin is in allowed list
+      const isAllowed = allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*');
+      
+      // Also allow any Vercel preview deployments (*.vercel.app)
+      const isVercelPreview = origin.includes('vercel.app');
+      
+      if (isAllowed || isVercelPreview) {
         callback(null, true);
       } else {
         console.log('❌ CORS blocked origin:', origin);
