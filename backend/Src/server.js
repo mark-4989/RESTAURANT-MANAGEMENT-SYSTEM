@@ -28,12 +28,34 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
       'http://localhost:5177', // Driver App
     ];
 
+// Log allowed origins for debugging
+console.log('🔐 CORS Configuration:');
+console.log('   Environment:', process.env.NODE_ENV || 'development');
+console.log('   Allowed Origins:', allowedOrigins);
+
 // Initialize Socket.IO with CORS
 const io = socketIo(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+      
+      // In production, check against allowed origins
+      if (process.env.NODE_ENV === 'production') {
+        if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+          callback(null, true);
+        } else {
+          console.log('❌ Blocked origin:', origin);
+          callback(new Error('Not allowed by CORS'));
+        }
+      } else {
+        // In development, allow all
+        callback(null, true);
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    credentials: true
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
   }
 });
 
@@ -49,9 +71,27 @@ const PORT = process.env.PORT || 5000;
 // MIDDLEWARE
 // ============================================
 app.use(cors({
-  origin: allowedOrigins,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    
+    // In production, check against allowed origins
+    if (process.env.NODE_ENV === 'production') {
+      if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+        callback(null, true);
+      } else {
+        console.log('❌ CORS blocked origin:', origin);
+        callback(null, false);
+      }
+    } else {
+      // In development, allow all
+      callback(null, true);
+    }
+  },
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
@@ -96,6 +136,11 @@ app.get('/api/health', (req, res) => {
     status: 'OK', 
     message: 'DineSmart API is running',
     websockets: 'enabled',
+    cors: {
+      environment: process.env.NODE_ENV || 'development',
+      allowedOrigins: allowedOrigins,
+      totalOrigins: allowedOrigins.length
+    },
     features: {
       orders: 'active',
       menu: 'active',
