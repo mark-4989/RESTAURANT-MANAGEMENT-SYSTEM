@@ -4,6 +4,9 @@ import { toast } from 'react-toastify';
 import io from 'socket.io-client';
 import '../styles/delivery-management.css';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+
 const DeliveryManagement = () => {
   const [deliveryOrders, setDeliveryOrders] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -20,7 +23,7 @@ const DeliveryManagement = () => {
     fetchDrivers();
     
     // Initialize Socket.IO connection
-    socketRef.current = io('http://localhost:5000');
+    socketRef.current = io(BACKEND_URL);
 
     socketRef.current.on('connect', () => {
       console.log('📡 Admin connected to live tracking server');
@@ -70,7 +73,7 @@ const DeliveryManagement = () => {
 
   const fetchDeliveryOrders = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/orders?orderType=delivery');
+      const response = await fetch(`${API_URL}/orders?orderType=delivery`);
       const data = await response.json();
       
       if (data.success) {
@@ -85,7 +88,7 @@ const DeliveryManagement = () => {
 
   const fetchDrivers = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/drivers');
+      const response = await fetch(`${API_URL}/drivers`);
       const data = await response.json();
       
       if (data.success) {
@@ -98,7 +101,7 @@ const DeliveryManagement = () => {
 
   const assignDriver = async (orderId, driverId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/assign-driver`, {
+      const response = await fetch(`${API_URL}/orders/${orderId}/assign-driver`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ driverId, deliveryStatus: 'assigned' })
@@ -122,7 +125,7 @@ const DeliveryManagement = () => {
 
   const broadcastOrder = async (orderId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/broadcast`, {
+      const response = await fetch(`${API_URL}/orders/${orderId}/broadcast`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ broadcast: true })

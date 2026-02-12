@@ -17,8 +17,9 @@ import {
 } from "lucide-react";
 import "../styles/delivery-management.css";
 
-const MAPBOX_TOKEN =
-  "pk.eyJ1IjoiY2hlZmRyZWR6IiwiYSI6ImNtaDRwY2JhZzFvYXFmMXNiOTVmYnQ5aHkifQ.wdXtoBRNl0xYhiPAZxDRjA";
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 const DeliveryManagement = () => {
   const [deliveryOrders, setDeliveryOrders] = useState([]);
@@ -60,7 +61,8 @@ const DeliveryManagement = () => {
   }, []);
 
   const initializeWebSocket = () => {
-    socketRef.current = new WebSocket("ws://localhost:5000");
+    const wsUrl = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+    socketRef.current = new WebSocket(wsUrl);
 
     socketRef.current.onopen = () =>
       console.log("📡 Admin connected to tracking server");
@@ -454,7 +456,7 @@ const DeliveryManagement = () => {
   const fetchDeliveryOrders = async () => {
     try {
       const response = await fetch(
-        "http://localhost:5000/api/orders?orderType=delivery",
+        `${API_URL}/orders?orderType=delivery`,
       );
       const data = await response.json();
       if (data.success) setDeliveryOrders(data.data || []);
@@ -467,7 +469,7 @@ const DeliveryManagement = () => {
 
   const fetchDrivers = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/drivers");
+      const response = await fetch(`${API_URL}/drivers`);
       const data = await response.json();
       if (data.success) setDrivers(data.data || []);
     } catch (error) {
@@ -478,7 +480,7 @@ const DeliveryManagement = () => {
   const assignDriver = async (orderId, driverId) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/orders/${orderId}/assign-driver`,
+        `${API_URL}/orders/${orderId}/assign-driver`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -504,7 +506,7 @@ const DeliveryManagement = () => {
   const broadcastOrder = async (orderId) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/orders/${orderId}/broadcast`,
+        `${API_URL}/orders/${orderId}/broadcast`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
