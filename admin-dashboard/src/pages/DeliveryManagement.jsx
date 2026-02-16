@@ -14,6 +14,12 @@ import {
   Clock,
   Map as MapIcon,
   Maximize2,
+  RotateCcw,
+  TrendingUp,
+  CheckCircle2,
+  AlertCircle,
+  Users,
+  DollarSign,
 } from "lucide-react";
 import "../styles/delivery-management.css";
 
@@ -249,87 +255,55 @@ const DeliveryManagement = () => {
 
     if (liveMapInstanceRef.current) liveMapInstanceRef.current.remove();
 
+    const activeOrdersWithLocation = activeOrders.filter(
+      (o) => o.deliveryLat && o.deliveryLng,
+    );
+
+    if (activeOrdersWithLocation.length === 0) {
+      liveMapInstanceRef.current = new mapboxgl.Map({
+        container: liveMapRef.current,
+        style: "mapbox://styles/mapbox/dark-v11",
+        center: [36.8219, -1.2921],
+        zoom: 11,
+        pitch: 45,
+      });
+      return;
+    }
+
+    const bounds = new mapboxgl.LngLatBounds();
+    activeOrdersWithLocation.forEach((order) => {
+      bounds.extend([order.deliveryLng, order.deliveryLat]);
+    });
+
     liveMapInstanceRef.current = new mapboxgl.Map({
       container: liveMapRef.current,
       style: "mapbox://styles/mapbox/dark-v11",
-      center: [36.8219, -1.2921],
-      zoom: 11,
+      bounds: bounds,
+      fitBoundsOptions: { padding: 80 },
       pitch: 45,
-      bearing: 0,
     });
 
     liveMapInstanceRef.current.addControl(new mapboxgl.NavigationControl());
-    liveMapInstanceRef.current.addControl(new mapboxgl.FullscreenControl());
 
-    liveMapInstanceRef.current.on("load", plotAllActiveDeliveries);
-  };
-
-  const plotAllActiveDeliveries = () => {
-    if (!liveMapInstanceRef.current) return;
-
-    const mapboxgl = window.mapboxgl;
-    const activeDeliveries = deliveryOrders.filter((o) =>
-      ["assigned", "picked-up", "on-the-way"].includes(o.deliveryStatus),
-    );
-
-    Object.values(activeMarkersRef.current).forEach((marker) =>
-      marker.remove(),
-    );
-    activeMarkersRef.current = {};
-
-    const bounds = new mapboxgl.LngLatBounds();
-
-    activeDeliveries.forEach((order) => {
-      if (!order.deliveryLat || !order.deliveryLng) return;
-
-      const customerEl = document.createElement("div");
-      customerEl.innerHTML = `
-        <div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5); white-space: nowrap; cursor: pointer;">
-          📍 ${order.orderNumber}
-        </div>
-      `;
-
-      const customerMarker = new mapboxgl.Marker({
-        element: customerEl,
-        anchor: "bottom",
-      })
+    activeOrdersWithLocation.forEach((order) => {
+      const marker = new mapboxgl.Marker({ color: "#ef4444", scale: 0.9 })
         .setLngLat([order.deliveryLng, order.deliveryLat])
         .setPopup(
-          new mapboxgl.Popup({ offset: 25, closeButton: false }).setHTML(`
-          <div style="padding: 16px; background: #1a1a2e; border-radius: 12px; min-width: 200px;">
-            <div style="margin-bottom: 8px;">
-              <strong style="color: #fff; font-size: 16px;">${order.orderNumber}</strong>
-              <span style="background: ${getStatusColor(order.deliveryStatus)}; color: white; padding: 4px 8px; border-radius: 12px; font-size: 10px; margin-left: 8px;">${order.deliveryStatus?.toUpperCase()}</span>
-            </div>
-            <div style="color: #aaa; font-size: 13px; margin-bottom: 4px;">👤 ${order.customerName}</div>
-            <div style="color: #aaa; font-size: 12px; margin-bottom: 8px;">📍 ${order.deliveryAddress?.substring(0, 40)}...</div>
-            <div style="color: #10b981; font-weight: 600; font-size: 14px;">${formatPrice(order.total)}</div>
+          new mapboxgl.Popup({ offset: 25 }).setHTML(`
+          <div style="padding: 10px; background: #1a1a2e; border-radius: 6px;">
+            <strong style="color: #fff;">${order.orderNumber}</strong><br/>
+            <span style="color: #aaa; font-size: 12px;">${order.customerName}</span>
           </div>
         `),
         )
         .addTo(liveMapInstanceRef.current);
 
-      activeMarkersRef.current[`customer-${order._id}`] = customerMarker;
-      bounds.extend([order.deliveryLng, order.deliveryLat]);
-
-      const driverLocation = liveDriverLocations[order.driver];
-      if (driverLocation?.location) {
-        updateLiveMapDriver(order.driver, driverLocation.location, order._id);
-        bounds.extend([
-          driverLocation.location.lng,
-          driverLocation.location.lat,
-        ]);
-        drawLiveRoute(order, driverLocation.location);
-      }
+      activeMarkersRef.current[order._id] = marker;
     });
 
-    if (!bounds.isEmpty()) {
-      liveMapInstanceRef.current.fitBounds(bounds, {
-        padding: 80,
-        maxZoom: 14,
-        duration: 1000,
-      });
-    }
+    Object.entries(liveDriverLocations).forEach(([driverId, data]) => {
+      updateLiveMapDriver(driverId, data.location, data.orderId);
+    });
   };
 
   const updateLiveMapDriver = (driverId, location, orderId) => {
@@ -338,131 +312,90 @@ const DeliveryManagement = () => {
     const markerId = `driver-${driverId}`;
 
     if (activeMarkersRef.current[markerId]) {
-      activeMarkersRef.current[markerId].setLngLat([
-        location.lng,
-        location.lat,
-      ]);
+      activeMarkersRef.current[markerId].setLngLat([location.lng, location.lat]);
     } else {
-      const driverEl = document.createElement("div");
-      driverEl.innerHTML = `
-        <div style="position: relative; animation: pulse 2s infinite;">
-          <div style="background: #10b981; padding: 8px 12px; border-radius: 20px; font-size: 20px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5); cursor: pointer;">🚗</div>
-          <div style="position: absolute; top: -8px; right: -8px; background: #ef4444; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #1a1a2e; animation: ping 1s infinite;"></div>
-        </div>
-      `;
+      const el = document.createElement("div");
+      el.innerHTML = "🚗";
+      el.style.fontSize = "24px";
+      el.style.cursor = "pointer";
 
-      const driverMarker = new window.mapboxgl.Marker({
-        element: driverEl,
+      const marker = new window.mapboxgl.Marker({
+        element: el,
         anchor: "center",
       })
         .setLngLat([location.lng, location.lat])
         .setPopup(
-          new window.mapboxgl.Popup({ offset: 25, closeButton: false })
-            .setHTML(`
-          <div style="padding: 12px; background: #1a1a2e; border-radius: 8px;">
-            <strong style="color: #10b981; font-size: 14px;">🚗 Driver</strong><br/>
-            <span style="color: #aaa; font-size: 12px;">Active Delivery</span>
+          new window.mapboxgl.Popup({ offset: 25 }).setHTML(`
+          <div style="padding: 10px; background: #1a1a2e; border-radius: 6px;">
+            <strong style="color: #10b981;">Driver ${driverId.slice(0, 6)}</strong>
           </div>
         `),
         )
         .addTo(liveMapInstanceRef.current);
 
-      activeMarkersRef.current[markerId] = driverMarker;
+      activeMarkersRef.current[markerId] = marker;
     }
 
-    const order = deliveryOrders.find((o) => o._id === orderId);
-    if (order) drawLiveRoute(order, location);
+    const order = activeOrders.find((o) => o._id === orderId);
+    if (order && order.deliveryLat && order.deliveryLng) {
+      drawLiveRoute(location, { lat: order.deliveryLat, lng: order.deliveryLng }, orderId);
+    }
   };
 
-  const drawLiveRoute = async (order, driverLocation) => {
+  const drawLiveRoute = async (driverLocation, customerLocation, orderId) => {
     if (!liveMapInstanceRef.current) return;
 
     try {
-      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLocation.lng},${driverLocation.lat};${order.deliveryLng},${order.deliveryLat}?geometries=geojson&steps=true&access_token=${MAPBOX_TOKEN}`;
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLocation.lng},${driverLocation.lat};${customerLocation.lng},${customerLocation.lat}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
       const response = await fetch(url);
       const data = await response.json();
 
       if (data.routes?.[0]) {
         const route = data.routes[0].geometry;
-        const sourceId = `route-${order._id}`;
-        const layerId = `route-layer-${order._id}`;
+        const routeId = `route-${orderId}`;
 
-        if (liveMapInstanceRef.current.getSource(sourceId)) {
+        if (liveMapInstanceRef.current.getSource(routeId)) {
           liveMapInstanceRef.current
-            .getSource(sourceId)
+            .getSource(routeId)
             .setData({ type: "Feature", geometry: route });
         } else {
-          liveMapInstanceRef.current.addSource(sourceId, {
+          liveMapInstanceRef.current.addSource(routeId, {
             type: "geojson",
             data: { type: "Feature", geometry: route },
           });
 
           liveMapInstanceRef.current.addLayer({
-            id: layerId,
+            id: routeId,
             type: "line",
-            source: sourceId,
+            source: routeId,
             layout: { "line-join": "round", "line-cap": "round" },
             paint: {
               "line-color": "#10b981",
               "line-width": 3,
-              "line-opacity": 0.7,
-              "line-dasharray": [2, 2],
+              "line-opacity": 0.6,
             },
           });
         }
 
-        const duration = Math.round(data.routes[0].duration / 60);
-        console.log(`📍 ${order.orderNumber} - ETA: ${duration} minutes`);
+        routeLinesRef.current[orderId] = routeId;
       }
     } catch (error) {
       console.error("Live route error:", error);
     }
   };
 
-  const openTracking = (order) => {
-    setTrackingOrder(order);
-    setTimeout(() => initializeMap(order), 100);
-
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
-      socketRef.current.send(
-        JSON.stringify({ type: "SUBSCRIBE_ORDER", orderId: order._id }),
-      );
-    }
-  };
-
-  const closeTracking = () => {
-    setTrackingOrder(null);
-    if (mapInstanceRef.current) mapInstanceRef.current.remove();
-    mapInstanceRef.current = null;
-    driverMarkerRef.current = null;
-    customerMarkerRef.current = null;
-  };
-
-  const openLiveMap = () => {
-    setShowLiveMapModal(true);
-    setTimeout(() => initializeLiveMap(), 100);
-  };
-
-  const closeLiveMap = () => {
-    setShowLiveMapModal(false);
-    if (liveMapInstanceRef.current) liveMapInstanceRef.current.remove();
-    liveMapInstanceRef.current = null;
-    Object.values(activeMarkersRef.current).forEach((marker) =>
-      marker.remove(),
-    );
-    activeMarkersRef.current = {};
-  };
-
   const fetchDeliveryOrders = async () => {
     try {
-      const response = await fetch(
-        `${API_URL}/orders?orderType=delivery`,
-      );
+      const response = await fetch(`${API_URL}/orders?orderType=delivery`);
       const data = await response.json();
-      if (data.success) setDeliveryOrders(data.data || []);
+
+      if (data.success) {
+        setDeliveryOrders(data.data || []);
+      }
       setLoading(false);
     } catch (error) {
-      console.error("Error fetching orders:", error);
+      console.error("Error fetching delivery orders:", error);
+      toast.error("Failed to fetch delivery orders");
       setLoading(false);
     }
   };
@@ -471,7 +404,10 @@ const DeliveryManagement = () => {
     try {
       const response = await fetch(`${API_URL}/drivers`);
       const data = await response.json();
-      if (data.success) setDrivers(data.data || []);
+
+      if (data.success) {
+        setDrivers(data.data || []);
+      }
     } catch (error) {
       console.error("Error fetching drivers:", error);
     }
@@ -479,17 +415,14 @@ const DeliveryManagement = () => {
 
   const assignDriver = async (orderId, driverId) => {
     try {
-      const response = await fetch(
-        `${API_URL}/orders/${orderId}/assign-driver`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ driverId, deliveryStatus: "assigned" }),
-        },
-      );
+      const response = await fetch(`${API_URL}/orders/${orderId}/assign-driver`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ driverId, deliveryStatus: "assigned" }),
+      });
 
       if (response.ok) {
-        toast.success("✅ Driver assigned!");
+        toast.success("Driver assigned successfully!");
         fetchDeliveryOrders();
         fetchDrivers();
         setShowAssignModal(false);
@@ -499,34 +432,59 @@ const DeliveryManagement = () => {
         toast.error("Failed to assign driver");
       }
     } catch (error) {
+      console.error("Error assigning driver:", error);
       toast.error("Failed to assign driver");
     }
   };
 
   const broadcastOrder = async (orderId) => {
     try {
-      const response = await fetch(
-        `${API_URL}/orders/${orderId}/broadcast`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ broadcast: true }),
-        },
-      );
+      const response = await fetch(`${API_URL}/orders/${orderId}/broadcast`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ broadcast: true }),
+      });
 
       if (response.ok) {
-        toast.success("📢 Order broadcasted!");
+        toast.success("Order broadcasted to all available drivers!");
         fetchDeliveryOrders();
       } else {
-        toast.error("Failed to broadcast");
+        toast.error("Failed to broadcast order");
       }
     } catch (error) {
-      toast.error("Failed to broadcast");
+      console.error("Error broadcasting order:", error);
+      toast.error("Failed to broadcast order");
     }
   };
 
-  const toggleDate = (dateKey) => {
-    setExpandedDates((prev) => ({ ...prev, [dateKey]: !prev[dateKey] }));
+  const openTrackingModal = (order) => {
+    setTrackingOrder(order);
+    setTimeout(() => initializeMap(order), 100);
+  };
+
+  const closeTrackingModal = () => {
+    setTrackingOrder(null);
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
+    }
+    if (driverMarkerRef.current) driverMarkerRef.current = null;
+    if (customerMarkerRef.current) customerMarkerRef.current = null;
+  };
+
+  const openLiveMap = () => {
+    setShowLiveMapModal(true);
+    setTimeout(() => initializeLiveMap(), 100);
+  };
+
+  const closeLiveMap = () => {
+    setShowLiveMapModal(false);
+    if (liveMapInstanceRef.current) {
+      liveMapInstanceRef.current.remove();
+      liveMapInstanceRef.current = null;
+    }
+    activeMarkersRef.current = {};
+    routeLinesRef.current = {};
   };
 
   const calculateTimeSince = (date) => {
@@ -556,48 +514,39 @@ const DeliveryManagement = () => {
     return { label: "NORMAL", color: "#10b981" };
   };
 
-  const formatPrice = (price) => `KSh ${price?.toLocaleString() || 0}`;
-
-  const formatDate = (date) => {
-    const d = new Date(date);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (d.toDateString() === today.toDateString()) return "Today";
-    if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
-    return d.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-    });
+  const formatPrice = (price) => {
+    return `KSh ${price?.toLocaleString() || 0}`;
   };
 
-  const ordersByDate = deliveryOrders.reduce((acc, order) => {
-    const dateKey = new Date(order.createdAt).toDateString();
-    if (!acc[dateKey]) acc[dateKey] = [];
-    acc[dateKey].push(order);
-    return acc;
-  }, {});
+  const toggleDateExpansion = (date) => {
+    setExpandedDates((prev) => ({
+      ...prev,
+      [date]: !prev[date],
+    }));
+  };
 
-  const sortedDates = Object.keys(ordersByDate).sort(
-    (a, b) => new Date(b) - new Date(a),
-  );
+  const groupOrdersByDate = (orders) => {
+    const groups = {};
+    orders.forEach((order) => {
+      const date = new Date(order.createdAt).toLocaleDateString();
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(order);
+    });
+    return groups;
+  };
+
   const pendingOrders = deliveryOrders.filter(
     (o) => o.deliveryStatus === "pending" || !o.deliveryStatus,
   );
-  const assignedOrders = deliveryOrders.filter(
-    (o) => o.deliveryStatus === "assigned",
-  );
+  const assignedOrders = deliveryOrders.filter((o) => o.deliveryStatus === "assigned");
   const activeOrders = deliveryOrders.filter((o) =>
     ["picked-up", "on-the-way"].includes(o.deliveryStatus),
   );
-  const completedOrders = deliveryOrders.filter(
-    (o) => o.deliveryStatus === "delivered",
-  );
-  const availableDrivers = drivers.filter(
-    (d) => d.status === "available" || d.isAvailable,
-  );
+  const completedOrders = deliveryOrders.filter((o) => o.deliveryStatus === "delivered");
+
+  const availableDrivers = drivers.filter((d) => d.status === "available" || d.isAvailable);
+
+  const groupedCompleted = groupOrdersByDate(completedOrders);
 
   if (loading) {
     return (
@@ -614,341 +563,446 @@ const DeliveryManagement = () => {
     <div className="delivery-management">
       <div className="page-header">
         <div>
-          <h1>🚚 Delivery Management</h1>
-          <p>Manage and dispatch delivery orders with live tracking</p>
+          <h1>
+            <Truck size={36} style={{ display: "inline-block", marginRight: "0.5rem", verticalAlign: "middle" }} />
+            Delivery Management
+          </h1>
+          <p>Manage and dispatch delivery orders to drivers with live tracking</p>
         </div>
-
-        {activeOrders.length > 0 && (
+        <div style={{ display: "flex", gap: "1rem" }}>
           <button
-            onClick={openLiveMap}
+            onClick={fetchDeliveryOrders}
             style={{
-              padding: "1rem 2rem",
-              background: "linear-gradient(135deg, #10b981, #059669)",
-              color: "white",
-              border: "none",
-              borderRadius: "12px",
-              fontWeight: 700,
-              fontSize: "1.1rem",
+              padding: "0.75rem 1.5rem",
+              background: "rgba(99, 102, 241, 0.15)",
+              border: "1px solid rgba(99, 102, 241, 0.3)",
+              borderRadius: "10px",
+              color: "#6366f1",
               cursor: "pointer",
+              fontWeight: 600,
               display: "flex",
               alignItems: "center",
-              gap: "0.75rem",
-              boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
-              transition: "all 0.3s",
+              gap: "0.5rem",
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.transform = "translateY(-2px)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.transform = "translateY(0)")
-            }
           >
-            <MapIcon size={24} />
-            View Live Map ({activeOrders.length} Active)
-            <div
-              style={{
-                width: "10px",
-                height: "10px",
-                background: "#ef4444",
-                borderRadius: "50%",
-                animation: "pulse 2s infinite",
-              }}
-            />
+            <RotateCcw size={18} /> Refresh
           </button>
-        )}
+          {activeOrders.length > 0 && (
+            <button
+              onClick={openLiveMap}
+              style={{
+                padding: "0.75rem 1.5rem",
+                background: "var(--gradient-primary)",
+                border: "none",
+                borderRadius: "10px",
+                color: "white",
+                cursor: "pointer",
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+              }}
+            >
+              <MapIcon size={18} /> Live Map
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="stats-grid">
         <div className="stat-card orange">
-          <div className="stat-icon">⏳</div>
+          <div className="stat-icon">
+            <Clock size={48} />
+          </div>
           <div className="stat-content">
             <div className="stat-value">{pendingOrders.length}</div>
             <div className="stat-label">Pending Assignment</div>
           </div>
         </div>
+
         <div className="stat-card blue">
-          <div className="stat-icon">📋</div>
+          <div className="stat-icon">
+            <Package size={48} />
+          </div>
           <div className="stat-content">
             <div className="stat-value">{assignedOrders.length}</div>
             <div className="stat-label">Assigned</div>
           </div>
         </div>
-        <div className="stat-card purple">
-          <div className="stat-icon">🚗</div>
+
+        <div className="stat-card green">
+          <div className="stat-icon">
+            <TrendingUp size={48} />
+          </div>
           <div className="stat-content">
             <div className="stat-value">{activeOrders.length}</div>
-            <div className="stat-label">In Progress</div>
+            <div className="stat-label">Active Deliveries</div>
           </div>
         </div>
-        <div className="stat-card green">
-          <div className="stat-icon">✅</div>
+
+        <div className="stat-card gray">
+          <div className="stat-icon">
+            <CheckCircle2 size={48} />
+          </div>
           <div className="stat-content">
             <div className="stat-value">{completedOrders.length}</div>
             <div className="stat-label">Completed Today</div>
           </div>
         </div>
-      </div>
 
-      <div className="glass-card drivers-section">
-        <h2>👥 Available Drivers ({availableDrivers.length})</h2>
-        <div className="drivers-list">
-          {availableDrivers.length > 0 ? (
-            availableDrivers.map((driver) => (
-              <div key={driver._id} className="driver-badge">
-                <div className="driver-status-dot available"></div>
-                <div className="driver-info">
-                  <strong>
-                    {driver.firstName} {driver.lastName}
-                  </strong>
-                  <small>
-                    {driver.vehicleType} • {driver.vehicleRegistration}
-                  </small>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p style={{ color: "#666", padding: "1rem" }}>
-              No drivers currently available
-            </p>
-          )}
+        <div className="stat-card purple">
+          <div className="stat-icon">
+            <Users size={48} />
+          </div>
+          <div className="stat-content">
+            <div className="stat-value">{availableDrivers.length}</div>
+            <div className="stat-label">Available Drivers</div>
+          </div>
+        </div>
+
+        <div className="stat-card indigo">
+          <div className="stat-icon">
+            <DollarSign size={48} />
+          </div>
+          <div className="stat-content">
+            <div className="stat-value">
+              {formatPrice(deliveryOrders.reduce((sum, o) => sum + o.total, 0))}
+            </div>
+            <div className="stat-label">Total Value</div>
+          </div>
         </div>
       </div>
 
-      {sortedDates.length > 0 ? (
-        sortedDates.map((dateKey) => {
-          const ordersForDate = ordersByDate[dateKey];
-          const isExpanded = expandedDates[dateKey] !== false;
-          const dateLabel = formatDate(dateKey);
-          const datePending = ordersForDate.filter(
-            (o) => o.deliveryStatus === "pending" || !o.deliveryStatus,
-          ).length;
-          const dateActive = ordersForDate.filter((o) =>
-            ["assigned", "picked-up", "on-the-way"].includes(o.deliveryStatus),
-          ).length;
-          const dateCompleted = ordersForDate.filter(
-            (o) => o.deliveryStatus === "delivered",
-          ).length;
+      {pendingOrders.length > 0 && (
+        <div className="glass-card orders-section">
+          <div className="section-header">
+            <h2>
+              <AlertCircle size={24} style={{ display: "inline-block", marginRight: "0.5rem", verticalAlign: "middle" }} />
+              Pending Orders ({pendingOrders.length})
+            </h2>
+          </div>
 
-          return (
-            <div key={dateKey} className="glass-card date-section">
-              <div className="date-header" onClick={() => toggleDate(dateKey)}>
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "1rem" }}
-                >
-                  <h2 style={{ margin: 0 }}>📅 {dateLabel}</h2>
-                  <div style={{ display: "flex", gap: "0.75rem" }}>
-                    {datePending > 0 && (
-                      <span className="mini-badge orange">
-                        {datePending} Pending
+          <div className="orders-grid">
+            {pendingOrders.map((order) => {
+              const urgency = getUrgency(order.createdAt);
+
+              return (
+                <div key={order._id} className="order-card">
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "1rem",
+                      right: "1rem",
+                      padding: "0.5rem 1rem",
+                      background: urgency.color + "22",
+                      border: `2px solid ${urgency.color}`,
+                      borderRadius: "20px",
+                      color: urgency.color,
+                      fontSize: "0.85rem",
+                      fontWeight: 700,
+                      zIndex: 10,
+                    }}
+                  >
+                    {urgency.label}
+                  </div>
+
+                  <div className="order-card-header">
+                    <div>
+                      <h3>{order.orderNumber}</h3>
+                      <span
+                        className="status-badge"
+                        style={{ background: getStatusColor(order.deliveryStatus) }}
+                      >
+                        {order.deliveryStatus?.toUpperCase() || "PENDING"}
                       </span>
-                    )}
-                    {dateActive > 0 && (
-                      <span className="mini-badge blue">
-                        {dateActive} Active
-                      </span>
-                    )}
-                    {dateCompleted > 0 && (
-                      <span className="mini-badge green">
-                        {dateCompleted} Completed
-                      </span>
+                    </div>
+                    <div className="order-total">{formatPrice(order.total)}</div>
+                  </div>
+
+                  <div className="order-card-body">
+                    <div className="delivery-info-grid">
+                      <div>
+                        <strong>
+                          <Users size={16} style={{ display: "inline", marginRight: "0.25rem" }} />
+                          Customer:
+                        </strong>
+                        <p>{order.customerName}</p>
+                      </div>
+                      <div>
+                        <strong>
+                          <Phone size={16} style={{ display: "inline", marginRight: "0.25rem" }} />
+                          Phone:
+                        </strong>
+                        <p>{order.deliveryPhone}</p>
+                      </div>
+                      <div>
+                        <strong>
+                          <Clock size={16} style={{ display: "inline", marginRight: "0.25rem" }} />
+                          Time:
+                        </strong>
+                        <p>{calculateTimeSince(order.createdAt)}</p>
+                      </div>
+                    </div>
+
+                    <div className="delivery-address">
+                      <strong>
+                        <MapPin size={16} style={{ display: "inline", marginRight: "0.25rem" }} />
+                        Delivery Address:
+                      </strong>
+                      <p>{order.deliveryAddress}</p>
+                    </div>
+
+                    {order.deliveryNote && (
+                      <div className="delivery-note">
+                        <strong>Note:</strong>
+                        <p>{order.deliveryNote}</p>
+                      </div>
                     )}
                   </div>
+
+                  <div className="order-card-actions">
+                    <button
+                      className="btn-assign"
+                      onClick={() => {
+                        setSelectedOrder(order);
+                        setShowAssignModal(true);
+                      }}
+                    >
+                      <Users size={18} style={{ marginRight: "0.5rem" }} />
+                      Assign Driver
+                    </button>
+                    <button
+                      className="btn-broadcast"
+                      onClick={() => broadcastOrder(order._id)}
+                    >
+                      <Radio size={18} style={{ marginRight: "0.5rem" }} />
+                      Broadcast to All
+                    </button>
+                  </div>
                 </div>
-                {isExpanded ? (
-                  <ChevronUp size={24} />
-                ) : (
-                  <ChevronDown size={24} />
-                )}
-              </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-              {isExpanded && (
-                <div className="orders-grid" style={{ marginTop: "1.5rem" }}>
-                  {ordersForDate.map((order) => {
-                    const urgency = getUrgency(order.createdAt);
-                    const driverLiveLocation =
-                      order.driver && liveDriverLocations[order.driver];
-                    const isLiveTracking =
-                      driverLiveLocation &&
-                      ["picked-up", "on-the-way"].includes(
-                        order.deliveryStatus,
-                      );
-                    const isPending =
-                      order.deliveryStatus === "pending" ||
-                      !order.deliveryStatus;
+      {[...assignedOrders, ...activeOrders].length > 0 && (
+        <div className="glass-card orders-section">
+          <div className="section-header">
+            <h2>
+              <Truck size={24} style={{ display: "inline-block", marginRight: "0.5rem", verticalAlign: "middle" }} />
+              Active Deliveries ({[...assignedOrders, ...activeOrders].length})
+            </h2>
+          </div>
 
-                    return (
+          <div className="orders-grid">
+            {[...assignedOrders, ...activeOrders].map((order) => {
+              const driverLiveLocation = order.driver && liveDriverLocations[order.driver];
+              const isLiveTracking =
+                driverLiveLocation && ["picked-up", "on-the-way"].includes(order.deliveryStatus);
+
+              return (
+                <div key={order._id} className="order-card" style={{ position: "relative" }}>
+                  {isLiveTracking && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "1rem",
+                        right: "1rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        padding: "0.5rem 1rem",
+                        background: "rgba(16, 185, 129, 0.1)",
+                        borderRadius: "50px",
+                        border: "2px solid #10b981",
+                        zIndex: 10,
+                      }}
+                    >
                       <div
-                        key={order._id}
-                        className={`order-card ${isPending ? "urgent-order" : ""}`}
-                        style={{ position: "relative" }}
+                        style={{
+                          width: "10px",
+                          height: "10px",
+                          background: "#10b981",
+                          borderRadius: "50%",
+                          animation: "pulse 2s infinite",
+                        }}
+                      />
+                      <span style={{ color: "#10b981", fontSize: "0.85rem", fontWeight: 600 }}>
+                        <MapPin size={16} style={{ display: "inline", marginRight: "0.25rem" }} />
+                        Live
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="order-card-header">
+                    <div>
+                      <h3>{order.orderNumber}</h3>
+                      <span
+                        className="status-badge"
+                        style={{ background: getStatusColor(order.deliveryStatus) }}
                       >
-                        {isLiveTracking && (
-                          <div className="live-indicator">
-                            <div className="pulse-dot" />
-                            <Radio size={14} style={{ color: "#10b981" }} />
-                            <span>Live</span>
-                          </div>
-                        )}
+                        {order.deliveryStatus?.toUpperCase() || "ASSIGNED"}
+                      </span>
+                    </div>
+                    <div className="order-total">{formatPrice(order.total)}</div>
+                  </div>
 
-                        <div className="order-card-header">
-                          <div>
-                            <h3>{order.orderNumber}</h3>
-                            {isPending ? (
-                              <span
-                                className="urgency-badge"
-                                style={{ background: urgency.color }}
-                              >
-                                {urgency.label}
-                              </span>
-                            ) : (
-                              <span
-                                className="status-badge"
-                                style={{
-                                  background: getStatusColor(
-                                    order.deliveryStatus,
-                                  ),
-                                }}
-                              >
-                                {order.deliveryStatus?.toUpperCase()}
-                              </span>
-                            )}
-                          </div>
-                          <div className="order-total">
-                            {formatPrice(order.total)}
-                          </div>
+                  <div className="order-card-body">
+                    <div className="delivery-info-grid">
+                      <div>
+                        <strong>
+                          <Users size={16} style={{ display: "inline", marginRight: "0.25rem" }} />
+                          Customer:
+                        </strong>
+                        <p>{order.customerName}</p>
+                      </div>
+                      <div>
+                        <strong>
+                          <Truck size={16} style={{ display: "inline", marginRight: "0.25rem" }} />
+                          Driver:
+                        </strong>
+                        <p>{order.driverName || "Assigning..."}</p>
+                      </div>
+                      <div>
+                        <strong>
+                          <Phone size={16} style={{ display: "inline", marginRight: "0.25rem" }} />
+                          Phone:
+                        </strong>
+                        <p>{order.deliveryPhone}</p>
+                      </div>
+                      <div>
+                        <strong>
+                          <Clock size={16} style={{ display: "inline", marginRight: "0.25rem" }} />
+                          Time:
+                        </strong>
+                        <p>{calculateTimeSince(order.createdAt)}</p>
+                      </div>
+                    </div>
+
+                    <div className="delivery-address compact">
+                      <strong>
+                        <MapPin size={16} style={{ display: "inline", marginRight: "0.25rem" }} />
+                      </strong>
+                      <p>{order.deliveryAddress}</p>
+                    </div>
+
+                    {isLiveTracking && (
+                      <div
+                        style={{
+                          marginTop: "1rem",
+                          padding: "0.75rem",
+                          background: "rgba(16, 185, 129, 0.1)",
+                          border: "1px solid rgba(16, 185, 129, 0.3)",
+                          borderRadius: "8px",
+                          fontSize: "0.85rem",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            color: "#059669",
+                          }}
+                        >
+                          <span style={{ fontWeight: 600 }}>
+                            <MapPin size={16} style={{ display: "inline", marginRight: "0.25rem" }} />
+                            Driver Location:
+                          </span>
+                          <span>
+                            {new Date(driverLiveLocation.timestamp).toLocaleTimeString()}
+                          </span>
                         </div>
-
-                        <div className="order-card-body">
-                          <div className="delivery-info-grid">
-                            <div>
-                              <strong>👤 Customer:</strong>
-                              <p>{order.customerName}</p>
-                            </div>
-                            <div>
-                              <strong>🚗 Driver:</strong>
-                              <p>{order.driverName || "Not assigned"}</p>
-                            </div>
-                            <div>
-                              <strong>📞 Phone:</strong>
-                              <p>{order.deliveryPhone}</p>
-                            </div>
-                            <div>
-                              <strong>⏱️ Time:</strong>
-                              <p>{calculateTimeSince(order.createdAt)}</p>
-                            </div>
-                          </div>
-
-                          <div className="delivery-address compact">
-                            <strong>📍</strong>
-                            <p>{order.deliveryAddress}</p>
-                          </div>
-
-                          {order.deliveryInstructions && (
-                            <div className="instructions">
-                              💬 "{order.deliveryInstructions}"
-                            </div>
-                          )}
-
-                          {isLiveTracking && (
-                            <div className="live-location-info">
-                              <div
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                }}
-                              >
-                                <span style={{ fontWeight: 600 }}>
-                                  📍 Driver Location:
-                                </span>
-                                <span>
-                                  {new Date(
-                                    driverLiveLocation.timestamp,
-                                  ).toLocaleTimeString()}
-                                </span>
-                              </div>
-                              <div
-                                style={{
-                                  fontSize: "0.75rem",
-                                  marginTop: "0.25rem",
-                                }}
-                              >
-                                {driverLiveLocation.location.lat.toFixed(6)},{" "}
-                                {driverLiveLocation.location.lng.toFixed(6)}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="order-card-actions">
-                          {isPending ? (
-                            <>
-                              <button
-                                className="btn-assign"
-                                onClick={() => {
-                                  setSelectedOrder(order);
-                                  setShowAssignModal(true);
-                                }}
-                              >
-                                🎯 Assign Driver
-                              </button>
-                              <button
-                                className="btn-broadcast"
-                                onClick={() => broadcastOrder(order._id)}
-                              >
-                                📢 Broadcast
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              {isLiveTracking &&
-                                order.deliveryLat &&
-                                order.deliveryLng && (
-                                  <button
-                                    className="btn-track"
-                                    onClick={() => openTracking(order)}
-                                  >
-                                    <Navigation size={16} /> Track on Map
-                                  </button>
-                                )}
-                            </>
-                          )}
+                        <div
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "#10b981",
+                            marginTop: "0.25rem",
+                          }}
+                        >
+                          Lat: {driverLiveLocation.location.lat.toFixed(6)}, Lng:{" "}
+                          {driverLiveLocation.location.lng.toFixed(6)}
                         </div>
                       </div>
-                    );
-                  })}
+                    )}
+                  </div>
+
+                  {(order.deliveryLat || order.deliveryLng) && (
+                    <div className="order-card-actions">
+                      <button className="btn-track" onClick={() => openTrackingModal(order)}>
+                        <Navigation size={18} style={{ marginRight: "0.5rem" }} />
+                        Track Delivery
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })
-      ) : (
-        <div
-          className="glass-card"
-          style={{ textAlign: "center", padding: "3rem" }}
-        >
-          <div style={{ fontSize: "4rem", marginBottom: "1rem" }}>📦</div>
-          <h3 style={{ color: "var(--text-primary)" }}>No delivery orders</h3>
-          <p style={{ color: "var(--text-secondary)" }}>
-            Orders will appear here once placed
-          </p>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {Object.keys(groupedCompleted).length > 0 && (
+        <div className="glass-card orders-section completed-section">
+          <div className="section-header">
+            <h2>
+              <CheckCircle2 size={24} style={{ display: "inline-block", marginRight: "0.5rem", verticalAlign: "middle" }} />
+              Completed Deliveries ({completedOrders.length})
+            </h2>
+          </div>
+
+          {Object.entries(groupedCompleted)
+            .sort(([a], [b]) => new Date(b) - new Date(a))
+            .map(([date, orders]) => (
+              <div key={date} className="date-group">
+                <div className="date-header" onClick={() => toggleDateExpansion(date)}>
+                  <h3>{date}</h3>
+                  <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                    <span className="order-count">{orders.length} orders</span>
+                    {expandedDates[date] ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                  </div>
+                </div>
+
+                {expandedDates[date] && (
+                  <div className="completed-list">
+                    {orders.map((order) => (
+                      <div key={order._id} className="completed-item">
+                        <div>
+                          <strong>{order.orderNumber}</strong>
+                          <span> • {order.customerName}</span>
+                        </div>
+                        <div className="completed-meta">
+                          <span className="completed-driver">
+                            <Truck size={14} style={{ marginRight: "0.25rem" }} />
+                            {order.driverName}
+                          </span>
+                          <span className="completed-price">{formatPrice(order.total)}</span>
+                          <span className="completed-time">
+                            {calculateTimeSince(order.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
         </div>
       )}
 
       {showAssignModal && selectedOrder && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowAssignModal(false)}
-        >
+        <div className="modal-overlay" onClick={() => setShowAssignModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>🎯 Assign Driver to {selectedOrder.orderNumber}</h2>
-              <button
-                className="close-btn"
-                onClick={() => setShowAssignModal(false)}
-              >
+              <h2>
+                <Users size={24} style={{ display: "inline", marginRight: "0.5rem" }} />
+                Assign Driver to {selectedOrder.orderNumber}
+              </h2>
+              <button className="close-btn" onClick={() => setShowAssignModal(false)}>
                 <X size={20} />
               </button>
             </div>
+
             <div className="modal-body">
               <div className="order-summary">
                 <p>
@@ -961,6 +1015,7 @@ const DeliveryManagement = () => {
                   <strong>Total:</strong> {formatPrice(selectedOrder.total)}
                 </p>
               </div>
+
               <div className="form-group">
                 <label>Select Driver:</label>
                 <select
@@ -971,34 +1026,34 @@ const DeliveryManagement = () => {
                   <option value="">-- Select a driver --</option>
                   {availableDrivers.map((driver) => (
                     <option key={driver._id} value={driver._id}>
-                      {driver.firstName} {driver.lastName} -{" "}
-                      {driver.vehicleType} ({driver.vehicleRegistration})
+                      {driver.firstName} {driver.lastName} - {driver.vehicleType} (
+                      {driver.vehicleRegistration})
                     </option>
                   ))}
                 </select>
               </div>
+
               {availableDrivers.length === 0 && (
                 <p className="warning-text">
-                  ⚠️ No drivers available. Consider broadcasting.
+                  <AlertCircle size={16} style={{ marginRight: "0.5rem" }} />
+                  No drivers currently available. Consider broadcasting this order.
                 </p>
               )}
             </div>
+
             <div className="modal-actions">
-              <button
-                className="btn-cancel"
-                onClick={() => setShowAssignModal(false)}
-              >
+              <button className="btn-cancel" onClick={() => setShowAssignModal(false)}>
                 Cancel
               </button>
               <button
                 className="btn-confirm"
                 onClick={() =>
-                  selectedDriver &&
-                  assignDriver(selectedOrder._id, selectedDriver)
+                  selectedDriver && assignDriver(selectedOrder._id, selectedDriver)
                 }
                 disabled={!selectedDriver}
               >
-                ✅ Assign Driver
+                <CheckCircle2 size={18} style={{ marginRight: "0.5rem" }} />
+                Assign Driver
               </button>
             </div>
           </div>
@@ -1006,14 +1061,17 @@ const DeliveryManagement = () => {
       )}
 
       {trackingOrder && (
-        <div className="modal-overlay" onClick={closeTracking}>
+        <div className="modal-overlay" onClick={closeTrackingModal}>
           <div
             className="modal-content tracking-modal"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-header">
               <div>
-                <h2>🗺️ Live Tracking: {trackingOrder.orderNumber}</h2>
+                <h2>
+                  <Navigation size={24} style={{ display: "inline", marginRight: "0.5rem" }} />
+                  Live Tracking - {trackingOrder.orderNumber}
+                </h2>
                 <p
                   style={{
                     margin: 0,
@@ -1021,69 +1079,106 @@ const DeliveryManagement = () => {
                     fontSize: "0.9rem",
                   }}
                 >
-                  📍 {trackingOrder.deliveryAddress}
+                  {trackingOrder.customerName} • {trackingOrder.deliveryAddress}
                 </p>
               </div>
-              <button className="close-btn" onClick={closeTracking}>
+              <button className="close-btn" onClick={closeTrackingModal}>
                 <X size={20} />
               </button>
             </div>
             <div
-              ref={mapRef}
               style={{
-                width: "100%",
-                height: "500px",
-                borderRadius: "12px",
-                marginBottom: "1rem",
-              }}
-            />
-            <div
-              style={{
-                padding: "1rem",
-                background: "rgba(255,255,255,0.03)",
-                borderRadius: "12px",
+                display: "grid",
+                gridTemplateColumns: "2fr 1fr",
+                gap: "1.5rem",
+                padding: "1.5rem",
               }}
             >
               <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    window.innerWidth > 768 ? "1fr 1fr 1fr" : "1fr",
-                  gap: "1rem",
-                  marginBottom: "1rem",
-                }}
-              >
+                ref={mapRef}
+                style={{ width: "100%", height: "500px", borderRadius: "12px" }}
+              />
+              <div>
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.75rem",
+                    padding: "1rem",
+                    background: "rgba(255,255,255,0.03)",
+                    borderRadius: "12px",
+                    marginBottom: "1rem",
                   }}
                 >
-                  <Package size={24} style={{ color: "#667eea" }} />
+                  <div style={{ marginBottom: "1rem" }}>
+                    <div
+                      style={{
+                        fontSize: "0.85rem",
+                        color: "var(--text-secondary)",
+                        marginBottom: "0.25rem",
+                      }}
+                    >
+                      Status
+                    </div>
+                    <div
+                      style={{
+                        padding: "0.5rem 1rem",
+                        background: getStatusColor(trackingOrder.deliveryStatus) + "22",
+                        border: `2px solid ${getStatusColor(trackingOrder.deliveryStatus)}`,
+                        borderRadius: "8px",
+                        color: getStatusColor(trackingOrder.deliveryStatus),
+                        fontWeight: 700,
+                        textAlign: "center",
+                      }}
+                    >
+                      {trackingOrder.deliveryStatus?.toUpperCase() || "ASSIGNED"}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: "1rem" }}>
+                    <div
+                      style={{
+                        fontSize: "0.85rem",
+                        color: "var(--text-secondary)",
+                        marginBottom: "0.25rem",
+                      }}
+                    >
+                      Driver
+                    </div>
+                    <div style={{ fontWeight: 600 }}>
+                      {trackingOrder.driverName || "Assigning..."}
+                    </div>
+                  </div>
                   <div>
                     <div
                       style={{
                         fontSize: "0.85rem",
                         color: "var(--text-secondary)",
+                        marginBottom: "0.25rem",
                       }}
                     >
-                      Customer
+                      Order Total
                     </div>
-                    <div style={{ fontWeight: 600 }}>
-                      {trackingOrder.customerName}
+                    <div
+                      style={{
+                        fontSize: "1.5rem",
+                        fontWeight: 700,
+                        color: "#10b981",
+                      }}
+                    >
+                      {formatPrice(trackingOrder.total)}
                     </div>
                   </div>
                 </div>
-                {trackingOrder.driverName && (
+                {trackingOrder.deliveryPhone && (
                   <div
                     style={{
+                      padding: "1rem",
+                      background: "rgba(59, 130, 246, 0.1)",
+                      borderRadius: "8px",
                       display: "flex",
                       alignItems: "center",
                       gap: "0.75rem",
+                      marginBottom: "1rem",
                     }}
                   >
-                    <Truck size={24} style={{ color: "#10b981" }} />
+                    <Phone size={20} style={{ color: "#3b82f6" }} />
                     <div>
                       <div
                         style={{
@@ -1091,91 +1186,41 @@ const DeliveryManagement = () => {
                           color: "var(--text-secondary)",
                         }}
                       >
-                        Driver
+                        Contact Customer
                       </div>
-                      <div style={{ fontWeight: 600 }}>
-                        {trackingOrder.driverName}
+                      <div style={{ fontWeight: 600, color: "#3b82f6" }}>
+                        {trackingOrder.deliveryPhone}
                       </div>
                     </div>
                   </div>
                 )}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.75rem",
-                  }}
-                >
-                  <Clock size={24} style={{ color: "#3b82f6" }} />
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "0.85rem",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      Total
-                    </div>
-                    <div style={{ fontWeight: 600, color: "#10b981" }}>
-                      {formatPrice(trackingOrder.total)}
-                    </div>
-                  </div>
-                </div>
+                {trackingOrder.deliveryLat && trackingOrder.deliveryLng && (
+                  <button
+                    onClick={() =>
+                      window.open(
+                        `https://www.google.com/maps/dir/?api=1&destination=${trackingOrder.deliveryLat},${trackingOrder.deliveryLng}`,
+                        "_blank",
+                      )
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "1rem",
+                      background: "var(--gradient-primary)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "10px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <MapPin size={18} /> Open in Google Maps
+                  </button>
+                )}
               </div>
-              {trackingOrder.deliveryPhone && (
-                <div
-                  style={{
-                    padding: "1rem",
-                    background: "rgba(59, 130, 246, 0.1)",
-                    borderRadius: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.75rem",
-                    marginBottom: "1rem",
-                  }}
-                >
-                  <Phone size={20} style={{ color: "#3b82f6" }} />
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "0.85rem",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      Contact Customer
-                    </div>
-                    <div style={{ fontWeight: 600, color: "#3b82f6" }}>
-                      {trackingOrder.deliveryPhone}
-                    </div>
-                  </div>
-                </div>
-              )}
-              {trackingOrder.deliveryLat && trackingOrder.deliveryLng && (
-                <button
-                  onClick={() =>
-                    window.open(
-                      `https://www.google.com/maps/dir/?api=1&destination=${trackingOrder.deliveryLat},${trackingOrder.deliveryLng}`,
-                      "_blank",
-                    )
-                  }
-                  style={{
-                    width: "100%",
-                    padding: "1rem",
-                    background: "var(--gradient-primary)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "10px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "0.5rem",
-                  }}
-                >
-                  <MapPin size={18} /> Open in Google Maps
-                </button>
-              )}
             </div>
           </div>
         </div>
@@ -1189,7 +1234,10 @@ const DeliveryManagement = () => {
           >
             <div className="modal-header">
               <div>
-                <h2>🗺️ Live Delivery Map</h2>
+                <h2>
+                  <MapIcon size={24} style={{ display: "inline", marginRight: "0.5rem" }} />
+                  Live Delivery Map
+                </h2>
                 <p
                   style={{
                     margin: 0,

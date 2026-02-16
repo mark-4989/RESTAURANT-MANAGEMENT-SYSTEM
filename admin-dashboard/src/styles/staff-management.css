@@ -1,9 +1,10 @@
 /* admin-dashboard/src/styles/staff-management.css */
+@import url('./blue-metallic-theme.css');
 
 .staff-page {
   min-height: 100vh;
   padding: 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--gradient-bg-primary);
 }
 
 .staff-header {
@@ -11,53 +12,64 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  color: white;
+  color: var(--text-primary);
 }
 
 .staff-header h1 {
   font-size: 2.5rem;
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .staff-header p {
   font-size: 1.1rem;
-  opacity: 0.9;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .header-actions {
   display: flex;
   gap: 1rem;
+  align-items: center;
 }
 
 .btn-primary, .btn-secondary {
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-primary {
-  background: white;
-  color: #667eea;
+  background: var(--gradient-primary);
+  color: var(--text-primary);
+  box-shadow: 0 4px 12px rgba(79, 124, 172, 0.3);
 }
 
+/* Minimal hover - only slight elevation */
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(79, 124, 172, 0.4);
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(79, 124, 172, 0.15);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(79, 124, 172, 0.2);
 }
 
 /* Stats Grid */
@@ -69,24 +81,28 @@
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 15px;
-  padding: 1.5rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  gap: 1.25rem;
+  border: 1px solid var(--border-primary);
   transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
 }
 
+/* Minimal hover - only slight elevation */
 .stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .stat-icon {
   font-size: 2.5rem;
+  color: var(--brand-primary);
+  filter: drop-shadow(0 4px 12px rgba(79, 124, 172, 0.3));
 }
 
 .stat-content {
@@ -95,14 +111,19 @@
 
 .stat-value {
   font-size: 2rem;
-  font-weight: 700;
-  color: #333;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 0.25rem;
 }
 
 .stat-label {
   font-size: 0.9rem;
-  color: #666;
+  color: var(--text-secondary);
   margin-top: 0.25rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Filter Tabs */
@@ -115,25 +136,29 @@
 
 .filter-tab {
   padding: 0.75rem 1.5rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg);
   backdrop-filter: blur(10px);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50px;
-  color: white;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
 }
 
+/* Minimal hover - only border color */
 .filter-tab:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
+  border-color: var(--brand-primary);
+  color: var(--text-primary);
 }
 
 .filter-tab.active {
-  background: white;
-  color: #667eea;
-  border-color: white;
+  background: var(--gradient-primary);
+  color: var(--text-primary);
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(79, 124, 172, 0.4);
 }
 
 /* Staff Grid */
@@ -144,24 +169,26 @@
 }
 
 .staff-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--border-primary);
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
 }
 
+/* Minimal hover - only slight elevation */
 .staff-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .staff-card-header {
   position: relative;
   padding: 2rem 1.5rem 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, rgba(79, 124, 172, 0.3) 0%, rgba(107, 155, 216, 0.2) 100%);
   text-align: center;
 }
 
@@ -169,8 +196,9 @@
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  border: 4px solid white;
+  border: 4px solid var(--brand-primary);
   object-fit: cover;
+  box-shadow: 0 4px 16px rgba(79, 124, 172, 0.4);
 }
 
 .status-indicator {
@@ -180,7 +208,8 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 3px solid white;
+  border: 3px solid var(--glass-bg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .staff-card-body {
@@ -190,23 +219,25 @@
 .staff-name {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 0.25rem;
   text-align: center;
 }
 
 .staff-id {
   text-align: center;
-  color: #999;
+  color: var(--text-tertiary);
   font-size: 0.9rem;
   margin-bottom: 1rem;
 }
 
 .role-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.5rem 1rem;
-  border-radius: 50px;
-  color: white;
+  border-radius: var(--radius-full);
+  color: var(--text-primary);
   font-weight: 600;
   font-size: 0.9rem;
   margin-bottom: 1rem;
@@ -226,11 +257,11 @@
   align-items: center;
   gap: 0.75rem;
   font-size: 0.9rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
-.info-row span:first-child {
-  font-size: 1.2rem;
+.info-row span {
+  color: var(--text-secondary);
 }
 
 .performance-preview {
@@ -238,9 +269,10 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
   padding: 1rem;
-  background: rgba(102, 126, 234, 0.05);
-  border-radius: 10px;
+  background: rgba(79, 124, 172, 0.1);
+  border-radius: var(--radius-md);
   margin-top: 1rem;
+  border: 1px solid var(--border-primary);
 }
 
 .perf-item {
@@ -253,19 +285,19 @@
 .perf-value {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #667eea;
+  color: var(--brand-primary);
 }
 
 .perf-label {
   font-size: 0.75rem;
-  color: #999;
+  color: var(--text-tertiary);
   margin-top: 0.25rem;
 }
 
 .staff-card-footer {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  border-top: 2px solid rgba(0, 0, 0, 0.05);
+  border-top: 1px solid var(--border-primary);
 }
 
 .card-btn {
@@ -274,21 +306,26 @@
   border: none;
   cursor: pointer;
   font-weight: 600;
-  color: #667eea;
+  color: var(--brand-primary);
   transition: all 0.3s ease;
-  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  border-right: 1px solid var(--border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .card-btn:last-child {
   border-right: none;
 }
 
+/* Minimal hover - only background */
 .card-btn:hover {
-  background: rgba(102, 126, 234, 0.1);
+  background: rgba(79, 124, 172, 0.1);
 }
 
 .card-btn.danger {
-  color: #ef4444;
+  color: var(--status-error);
 }
 
 .card-btn.danger:hover {
@@ -299,27 +336,30 @@
 .no-staff {
   text-align: center;
   padding: 4rem 2rem;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border-radius: var(--radius-xl);
   max-width: 500px;
   margin: 0 auto;
+  border: 1px solid var(--border-primary);
 }
 
 .no-staff-icon {
   font-size: 5rem;
   margin-bottom: 1rem;
+  color: var(--brand-primary);
+  opacity: 0.3;
 }
 
 .no-staff h3 {
   font-size: 1.8rem;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 
 .no-staff p {
   font-size: 1.1rem;
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 2rem;
 }
 
@@ -330,14 +370,14 @@
   align-items: center;
   justify-content: center;
   min-height: 60vh;
-  color: white;
+  color: var(--text-primary);
 }
 
 .spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
+  border: 4px solid var(--border-primary);
+  border-top-color: var(--brand-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
@@ -354,23 +394,26 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--overlay-heavy);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--z-modal);
   padding: 1rem;
   animation: fadeIn 0.3s ease;
 }
 
 .modal-content {
-  background: white;
-  border-radius: 20px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-xl);
   max-width: 800px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
   animation: slideUp 0.3s ease;
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-xl);
 }
 
 @keyframes fadeIn {
@@ -394,32 +437,34 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .modal-header h2 {
   font-size: 1.5rem;
-  color: #333;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .close-btn {
-  background: rgba(0, 0, 0, 0.1);
-  border: none;
+  background: rgba(79, 124, 172, 0.1);
+  border: 1px solid var(--border-primary);
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  font-size: 1.5rem;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--text-secondary);
 }
 
+/* Minimal hover - only color change */
 .close-btn:hover {
-  background: rgba(0, 0, 0, 0.2);
-  transform: rotate(90deg);
+  background: rgba(239, 68, 68, 0.15);
+  border-color: var(--status-error);
+  color: var(--status-error);
 }
 
 .modal-body {
@@ -430,20 +475,20 @@
 .form-group select,
 .form-group textarea {
   padding: 0.75rem 1rem;
-  border: 2px solid rgba(102, 126, 234, 0.2);
-  border-radius: 10px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
   font-size: 1rem;
   transition: all 0.3s ease;
-  background: white;
-  color: #000;              /* ← ADD THIS */
-  font-weight: 500;         /* ← ADD THIS */
+  background: var(--input-bg);
+  color: var(--text-dark);
+  font-weight: 500;
 }
 
 /* Add this for placeholders */
 .form-group input::placeholder,
 .form-group select::placeholder,
 .form-group textarea::placeholder {
-  color: #999;
+  color: var(--text-gray);
   opacity: 1;
 }
 

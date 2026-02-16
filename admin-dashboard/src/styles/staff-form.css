@@ -1,4 +1,5 @@
 /* admin-dashboard/src/styles/staff-form.css */
+@import url('./blue-metallic-theme.css');
 
 .staff-form-container {
   max-height: 80vh;
@@ -8,24 +9,26 @@
 
 .staff-form h2 {
   font-size: 1.8rem;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 2rem;
   text-align: center;
 }
 
 .form-section {
-  background: rgba(102, 126, 234, 0.05);
-  border-radius: 15px;
+  background: rgba(79, 124, 172, 0.1);
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
+  border: 1px solid var(--border-primary);
 }
 
 .form-section h3 {
   font-size: 1.2rem;
-  color: #667eea;
+  color: var(--brand-primary);
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+  border-bottom: 2px solid rgba(79, 124, 172, 0.2);
+  font-weight: 700;
 }
 
 .form-row {
@@ -43,7 +46,7 @@
 
 .form-group label {
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
@@ -51,33 +54,36 @@
 .form-group select,
 .form-group textarea {
   padding: 0.75rem 1rem;
-  border: 2px solid rgba(102, 126, 234, 0.2);
-  border-radius: 10px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
   font-size: 1rem;
   transition: all 0.3s ease;
-  background: white;
+  background: var(--input-bg);
+  color: var(--text-dark);
+  font-weight: 500;
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(79, 124, 172, 0.15);
+  background: var(--input-bg-focus);
 }
 
 .form-group input.error {
-  border-color: #ef4444;
+  border-color: var(--status-error);
 }
 
 .error-text {
-  color: #ef4444;
+  color: var(--status-error);
   font-size: 0.85rem;
   margin-top: -0.25rem;
 }
 
 .form-group small {
-  color: #999;
+  color: var(--text-tertiary);
   font-size: 0.85rem;
   font-style: italic;
 }
@@ -88,14 +94,14 @@
   justify-content: flex-end;
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 2px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid var(--border-primary);
 }
 
 .btn-cancel,
 .btn-save {
   padding: 0.75rem 2rem;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
@@ -103,22 +109,25 @@
 }
 
 .btn-cancel {
-  background: rgba(0, 0, 0, 0.1);
-  color: #333;
+  background: rgba(79, 124, 172, 0.1);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
 }
 
 .btn-cancel:hover {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(79, 124, 172, 0.15);
 }
 
 .btn-save {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--gradient-primary);
+  color: var(--text-primary);
+  box-shadow: 0 4px 12px rgba(79, 124, 172, 0.3);
 }
 
+/* Minimal hover - only slight elevation */
 .btn-save:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(79, 124, 172, 0.4);
 }
 
 .btn-save:disabled,

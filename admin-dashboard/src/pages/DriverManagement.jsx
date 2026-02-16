@@ -2,6 +2,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import io from 'socket.io-client';
+import { 
+  Truck, 
+  Package, 
+  Clock, 
+  CheckCircle2, 
+  Users, 
+  Phone, 
+  MapPin, 
+  Radio, 
+  AlertCircle,
+  X 
+} from 'lucide-react';
 import '../styles/delivery-management.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -108,7 +120,7 @@ const DeliveryManagement = () => {
       });
 
       if (response.ok) {
-        toast.success('✅ Driver assigned successfully!');
+        toast.success('Driver assigned successfully!');
         fetchDeliveryOrders();
         fetchDrivers();
         setShowAssignModal(false);
@@ -132,7 +144,7 @@ const DeliveryManagement = () => {
       });
 
       if (response.ok) {
-        toast.success('📢 Order broadcasted to all available drivers!');
+        toast.success('Order broadcasted to all available drivers!');
         fetchDeliveryOrders();
       } else {
         toast.error('Failed to broadcast order');
@@ -198,7 +210,10 @@ const DeliveryManagement = () => {
     <div className="delivery-management">
       <div className="page-header">
         <div>
-          <h1>🚚 Delivery Management</h1>
+          <h1>
+            <Truck size={36} style={{ display: 'inline-block', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+            Delivery Management
+          </h1>
           <p>Manage and dispatch delivery orders to drivers with live tracking</p>
         </div>
       </div>
@@ -206,7 +221,9 @@ const DeliveryManagement = () => {
       {/* Stats Cards */}
       <div className="stats-grid">
         <div className="stat-card orange">
-          <div className="stat-icon">⏳</div>
+          <div className="stat-icon">
+            <Clock size={48} />
+          </div>
           <div className="stat-content">
             <div className="stat-value">{pendingOrders.length}</div>
             <div className="stat-label">Pending Assignment</div>
@@ -214,23 +231,29 @@ const DeliveryManagement = () => {
         </div>
 
         <div className="stat-card blue">
-          <div className="stat-icon">📋</div>
+          <div className="stat-icon">
+            <Package size={48} />
+          </div>
           <div className="stat-content">
             <div className="stat-value">{assignedOrders.length}</div>
             <div className="stat-label">Assigned</div>
           </div>
         </div>
 
-        <div className="stat-card purple">
-          <div className="stat-icon">🚗</div>
+        <div className="stat-card green">
+          <div className="stat-icon">
+            <Truck size={48} />
+          </div>
           <div className="stat-content">
             <div className="stat-value">{activeOrders.length}</div>
-            <div className="stat-label">In Progress</div>
+            <div className="stat-label">Active Deliveries</div>
           </div>
         </div>
 
-        <div className="stat-card green">
-          <div className="stat-icon">✅</div>
+        <div className="stat-card gray">
+          <div className="stat-icon">
+            <CheckCircle2 size={48} />
+          </div>
           <div className="stat-content">
             <div className="stat-value">{completedOrders.length}</div>
             <div className="stat-label">Completed Today</div>
@@ -238,74 +261,91 @@ const DeliveryManagement = () => {
         </div>
       </div>
 
-      {/* Available Drivers Section */}
-      <div className="glass-card drivers-section">
-        <h2>👥 Available Drivers ({availableDrivers.length})</h2>
-        <div className="drivers-list">
-          {availableDrivers.length > 0 ? (
-            availableDrivers.map(driver => (
-              <div key={driver._id} className="driver-badge">
-                <div className="driver-status-dot available"></div>
-                <div className="driver-info">
-                  <strong>{driver.firstName} {driver.lastName}</strong>
-                  <small>{driver.vehicleType} • {driver.vehicleRegistration}</small>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p style={{ color: '#666', padding: '1rem' }}>No drivers currently available</p>
-          )}
-        </div>
-      </div>
-
-      {/* Pending Orders - URGENT */}
+      {/* Pending Orders - Need Assignment */}
       {pendingOrders.length > 0 && (
-        <div className="glass-card orders-section urgent">
+        <div className="glass-card orders-section">
           <div className="section-header">
             <h2>
-              <span className="section-badge urgent">{pendingOrders.length}</span>
-              ⏳ Pending Assignment - Action Required
+              <AlertCircle size={24} style={{ display: 'inline-block', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+              Pending Orders ({pendingOrders.length})
             </h2>
           </div>
           
           <div className="orders-grid">
             {pendingOrders.map(order => {
               const urgency = getUrgency(order.createdAt);
+              
               return (
-                <div key={order._id} className="order-card urgent-order">
+                <div key={order._id} className="order-card">
+                  {/* Urgency Badge */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '1rem',
+                    right: '1rem',
+                    padding: '0.5rem 1rem',
+                    background: urgency.color + '22',
+                    border: `2px solid ${urgency.color}`,
+                    borderRadius: '20px',
+                    color: urgency.color,
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    zIndex: 10
+                  }}>
+                    {urgency.label}
+                  </div>
+
                   <div className="order-card-header">
                     <div>
                       <h3>{order.orderNumber}</h3>
-                      <span className="urgency-badge" style={{ background: urgency.color }}>
-                        {urgency.label}
+                      <span 
+                        className="status-badge"
+                        style={{ background: getStatusColor(order.deliveryStatus) }}
+                      >
+                        {order.deliveryStatus?.toUpperCase() || 'PENDING'}
                       </span>
                     </div>
                     <div className="order-total">{formatPrice(order.total)}</div>
                   </div>
 
                   <div className="order-card-body">
-                    <div className="customer-info">
-                      <p><strong>👤 {order.customerName}</strong></p>
-                      <p>📞 {order.deliveryPhone}</p>
-                      <p className="time-ago">{calculateTimeSince(order.createdAt)}</p>
+                    <div className="delivery-info-grid">
+                      <div>
+                        <strong>
+                          <Users size={16} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                          Customer:
+                        </strong>
+                        <p>{order.customerName}</p>
+                      </div>
+                      <div>
+                        <strong>
+                          <Phone size={16} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                          Phone:
+                        </strong>
+                        <p>{order.deliveryPhone}</p>
+                      </div>
+                      <div>
+                        <strong>
+                          <Clock size={16} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                          Time:
+                        </strong>
+                        <p>{calculateTimeSince(order.createdAt)}</p>
+                      </div>
                     </div>
 
                     <div className="delivery-address">
-                      <strong>📍 Delivery Address:</strong>
+                      <strong>
+                        <MapPin size={16} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                        Delivery Address:
+                      </strong>
                       <p>{order.deliveryAddress}</p>
-                      {order.deliveryInstructions && (
-                        <p className="instructions">💬 "{order.deliveryInstructions}"</p>
-                      )}
                     </div>
 
-                    <div className="order-items">
-                      <strong>📦 Items ({order.items?.length || 0}):</strong>
-                      <p>
-                        {order.items?.map((item, i) => (
-                          <span key={i}>{item.quantity}x {item.name}{i < order.items.length - 1 ? ', ' : ''}</span>
-                        ))}
-                      </p>
-                    </div>
+                    {order.deliveryNote && (
+                      <div className="delivery-note">
+                        <strong>Note:</strong>
+                        <p>{order.deliveryNote}</p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="order-card-actions">
@@ -316,13 +356,15 @@ const DeliveryManagement = () => {
                         setShowAssignModal(true);
                       }}
                     >
-                      🎯 Assign to Driver
+                      <Users size={18} style={{ marginRight: '0.5rem' }} />
+                      Assign Driver
                     </button>
                     <button
                       className="btn-broadcast"
                       onClick={() => broadcastOrder(order._id)}
                     >
-                      📢 Broadcast to All
+                      <Radio size={18} style={{ marginRight: '0.5rem' }} />
+                      Broadcast to All
                     </button>
                   </div>
                 </div>
@@ -336,7 +378,10 @@ const DeliveryManagement = () => {
       {[...assignedOrders, ...activeOrders].length > 0 && (
         <div className="glass-card orders-section">
           <div className="section-header">
-            <h2>🚗 Active Deliveries ({[...assignedOrders, ...activeOrders].length})</h2>
+            <h2>
+              <Truck size={24} style={{ display: 'inline-block', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+              Active Deliveries ({[...assignedOrders, ...activeOrders].length})
+            </h2>
           </div>
           
           <div className="orders-grid">
@@ -369,7 +414,8 @@ const DeliveryManagement = () => {
                         animation: 'pulse 2s infinite'
                       }} />
                       <span style={{ color: '#10b981', fontSize: '0.85rem', fontWeight: 600 }}>
-                        📍 Live
+                        <MapPin size={16} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                        Live
                       </span>
                     </div>
                   )}
@@ -390,25 +436,39 @@ const DeliveryManagement = () => {
                   <div className="order-card-body">
                     <div className="delivery-info-grid">
                       <div>
-                        <strong>👤 Customer:</strong>
+                        <strong>
+                          <Users size={16} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                          Customer:
+                        </strong>
                         <p>{order.customerName}</p>
                       </div>
                       <div>
-                        <strong>🚗 Driver:</strong>
+                        <strong>
+                          <Truck size={16} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                          Driver:
+                        </strong>
                         <p>{order.driverName || 'Assigning...'}</p>
                       </div>
                       <div>
-                        <strong>📞 Phone:</strong>
+                        <strong>
+                          <Phone size={16} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                          Phone:
+                        </strong>
                         <p>{order.deliveryPhone}</p>
                       </div>
                       <div>
-                        <strong>⏱️ Time:</strong>
+                        <strong>
+                          <Clock size={16} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                          Time:
+                        </strong>
                         <p>{calculateTimeSince(order.createdAt)}</p>
                       </div>
                     </div>
 
                     <div className="delivery-address compact">
-                      <strong>📍</strong>
+                      <strong>
+                        <MapPin size={16} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                      </strong>
                       <p>{order.deliveryAddress}</p>
                     </div>
 
@@ -423,7 +483,10 @@ const DeliveryManagement = () => {
                         fontSize: '0.85rem'
                       }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', color: '#059669' }}>
-                          <span style={{ fontWeight: 600 }}>📍 Driver Location:</span>
+                          <span style={{ fontWeight: 600 }}>
+                            <MapPin size={16} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                            Driver Location:
+                          </span>
                           <span>{new Date(driverLiveLocation.timestamp).toLocaleTimeString()}</span>
                         </div>
                         <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.25rem' }}>
@@ -443,7 +506,10 @@ const DeliveryManagement = () => {
       {completedOrders.length > 0 && (
         <div className="glass-card orders-section completed-section">
           <div className="section-header">
-            <h2>✅ Completed Today ({completedOrders.length})</h2>
+            <h2>
+              <CheckCircle2 size={24} style={{ display: 'inline-block', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+              Completed Today ({completedOrders.length})
+            </h2>
           </div>
           
           <div className="completed-list">
@@ -468,9 +534,12 @@ const DeliveryManagement = () => {
         <div className="modal-overlay" onClick={() => setShowAssignModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>🎯 Assign Driver to {selectedOrder.orderNumber}</h2>
+              <h2>
+                <Users size={24} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                Assign Driver to {selectedOrder.orderNumber}
+              </h2>
               <button className="close-btn" onClick={() => setShowAssignModal(false)}>
-                ✕
+                <X size={20} />
               </button>
             </div>
 
@@ -498,7 +567,10 @@ const DeliveryManagement = () => {
               </div>
 
               {availableDrivers.length === 0 && (
-                <p className="warning-text">⚠️ No drivers currently available. Consider broadcasting this order.</p>
+                <p className="warning-text">
+                  <AlertCircle size={16} style={{ marginRight: '0.5rem' }} />
+                  No drivers currently available. Consider broadcasting this order.
+                </p>
               )}
             </div>
 
@@ -514,7 +586,8 @@ const DeliveryManagement = () => {
                 onClick={() => selectedDriver && assignDriver(selectedOrder._id, selectedDriver)}
                 disabled={!selectedDriver}
               >
-                ✅ Assign Driver
+                <CheckCircle2 size={18} style={{ marginRight: '0.5rem' }} />
+                Assign Driver
               </button>
             </div>
           </div>

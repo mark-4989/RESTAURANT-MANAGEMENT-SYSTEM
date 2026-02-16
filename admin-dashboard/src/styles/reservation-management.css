@@ -1,9 +1,9 @@
 /* ============================================
-   RESERVATION MANAGEMENT - DARK THEME
+   RESERVATION MANAGEMENT - BLUE OCEAN METALLIC THEME
    Reservation System Styles
    ============================================ */
 
-@import url('./dark-theme-master.css');
+@import url('./blue-metallic-theme.css');
 
 .reservation-management {
   padding: 2rem;
@@ -70,20 +70,21 @@
   width: 4px;
 }
 
-.stat-card.blue::before { background: var(--gradient-info); }
-.stat-card.green::before { background: var(--gradient-success); }
-.stat-card.orange::before { background: var(--gradient-warning); }
+.stat-card.blue::before { background: var(--gradient-primary); }
+.stat-card.green::before { background: linear-gradient(180deg, #10b981 0%, #059669 100%); }
+.stat-card.orange::before { background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%); }
 .stat-card.purple::before { background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 100%); }
 
+/* Minimal hover - only slight elevation */
 .stat-card:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-xl);
-  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .stat-icon {
   font-size: 3rem;
-  filter: drop-shadow(0 4px 12px rgba(99, 102, 241, 0.3));
+  color: var(--brand-primary);
+  filter: drop-shadow(0 4px 12px rgba(79, 124, 172, 0.3));
 }
 
 .stat-value {
@@ -112,7 +113,7 @@
 
 .filter-tab {
   padding: 0.875rem 1.75rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--glass-bg);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-full);
   color: var(--text-secondary);
@@ -121,17 +122,17 @@
   transition: all 0.3s ease;
 }
 
+/* Minimal hover - only border color change */
 .filter-tab:hover {
   border-color: var(--brand-primary);
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.06);
 }
 
 .filter-tab.active {
   background: var(--gradient-primary);
   border-color: transparent;
   color: var(--text-primary);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 12px rgba(79, 124, 172, 0.4);
 }
 
 /* ========== RESERVATIONS TABLE ========== */
@@ -151,7 +152,7 @@
 }
 
 .reservations-table thead {
-  background: rgba(99, 102, 241, 0.08);
+  background: rgba(79, 124, 172, 0.12);
 }
 
 .reservations-table th {
@@ -175,8 +176,9 @@
   transition: all 0.2s ease;
 }
 
+/* Minimal hover - only background change */
 .reservations-table tbody tr:hover {
-  background: rgba(99, 102, 241, 0.05);
+  background: rgba(79, 124, 172, 0.08);
 }
 
 .reservation-number {
@@ -218,14 +220,15 @@
 }
 
 .guests-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   padding: 0.5rem 1rem;
-  background: rgba(59, 130, 246, 0.12);
-  color: var(--status-info);
+  background: rgba(79, 124, 172, 0.15);
+  color: var(--brand-primary);
   border-radius: var(--radius-full);
   font-weight: 600;
   font-size: 0.95rem;
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(79, 124, 172, 0.3);
 }
 
 .status-badge {
@@ -251,7 +254,6 @@
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 1.15rem;
   width: 38px;
   height: 38px;
   display: flex;
@@ -260,14 +262,14 @@
 }
 
 .btn-view {
-  background: rgba(59, 130, 246, 0.12);
-  color: var(--status-info);
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: rgba(79, 124, 172, 0.15);
+  color: var(--brand-primary);
+  border: 1px solid rgba(79, 124, 172, 0.3);
 }
 
+/* Minimal hover - only scale */
 .btn-view:hover {
-  background: rgba(59, 130, 246, 0.2);
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .btn-confirm {
@@ -277,8 +279,7 @@
 }
 
 .btn-confirm:hover {
-  background: rgba(16, 185, 129, 0.2);
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .btn-seat {
@@ -288,8 +289,7 @@
 }
 
 .btn-seat:hover {
-  background: rgba(139, 92, 246, 0.2);
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .btn-complete {
@@ -299,8 +299,7 @@
 }
 
 .btn-complete:hover {
-  background: rgba(16, 185, 129, 0.2);
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .btn-delete {
@@ -310,8 +309,7 @@
 }
 
 .btn-delete:hover {
-  background: rgba(239, 68, 68, 0.2);
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 /* ========== EMPTY STATE ========== */
@@ -327,7 +325,8 @@
 .empty-icon {
   font-size: 6rem;
   margin-bottom: 1.5rem;
-  opacity: 0.2;
+  opacity: 0.3;
+  color: var(--brand-primary);
 }
 
 .empty-state h3 {
@@ -410,12 +409,11 @@
 }
 
 .close-btn {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(79, 124, 172, 0.1);
   border: 1px solid var(--border-primary);
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  font-size: 1.5rem;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
@@ -424,11 +422,11 @@
   color: var(--text-secondary);
 }
 
+/* Minimal hover - only color change */
 .close-btn:hover {
   background: rgba(239, 68, 68, 0.15);
   border-color: var(--status-error);
   color: var(--status-error);
-  transform: rotate(90deg);
 }
 
 .modal-body {
@@ -444,7 +442,7 @@
   color: var(--brand-primary);
   margin-bottom: 1.25rem;
   padding-bottom: 0.75rem;
-  border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+  border-bottom: 2px solid rgba(79, 124, 172, 0.2);
   font-weight: 700;
 }
 
@@ -476,10 +474,10 @@
 
 .special-requests,
 .notes {
-  background: var(--status-warning-bg);
+  background: rgba(79, 124, 172, 0.1);
   padding: 1.125rem;
   border-radius: var(--radius-md);
-  border: 1px solid var(--status-warning-border);
+  border: 1px solid rgba(79, 124, 172, 0.2);
   color: var(--text-primary);
   font-size: 0.95rem;
   line-height: 1.6;
@@ -491,7 +489,7 @@
   padding: 2rem;
   border-top: 1px solid var(--border-primary);
   flex-wrap: wrap;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(26, 41, 66, 0.3);
 }
 
 .modal-actions button {
@@ -503,16 +501,20 @@
   transition: all 0.3s ease;
   color: var(--text-primary);
   font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-confirm-modal {
-  background: var(--gradient-success);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
+/* Minimal hover - only slight elevation */
 .btn-confirm-modal:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
 }
 
 .btn-seat-modal {
@@ -521,38 +523,38 @@
 }
 
 .btn-seat-modal:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
 }
 
 .btn-complete-modal {
-  background: var(--gradient-success);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .btn-complete-modal:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
 }
 
 .btn-cancel-modal {
-  background: var(--gradient-danger);
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .btn-cancel-modal:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
 }
 
 .btn-close {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(79, 124, 172, 0.1);
   color: var(--text-primary);
   border: 1px solid var(--border-primary);
 }
 
 .btn-close:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(79, 124, 172, 0.15);
 }
 
 /* ========== RESPONSIVE ========== */

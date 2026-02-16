@@ -1,6 +1,23 @@
 // admin-dashboard/src/pages/ReservationManagement.jsx (FIXED)
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import {
+  Calendar,
+  ClipboardList,
+  Clock,
+  CheckCircle2,
+  Users,
+  Eye,
+  Check,
+  Armchair,
+  Trash2,
+  X,
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  FileText
+} from 'lucide-react';
 import '../styles/reservation-management.css';
 
 const ReservationManagement = () => {
@@ -150,7 +167,10 @@ const ReservationManagement = () => {
     <div className="reservation-management">
       <div className="page-header">
         <div>
-          <h1>📅 Reservation Management</h1>
+          <h1>
+            <Calendar size={36} style={{ display: 'inline-block', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+            Reservation Management
+          </h1>
           <p>Manage customer table reservations</p>
         </div>
       </div>
@@ -158,7 +178,9 @@ const ReservationManagement = () => {
       {/* Stats Grid */}
       <div className="stats-grid">
         <div className="stat-card blue">
-          <div className="stat-icon">📅</div>
+          <div className="stat-icon">
+            <Calendar size={48} />
+          </div>
           <div>
             <div className="stat-value">{stats.totalReservations}</div>
             <div className="stat-label">Total Reservations</div>
@@ -166,7 +188,9 @@ const ReservationManagement = () => {
         </div>
 
         <div className="stat-card green">
-          <div className="stat-icon">📋</div>
+          <div className="stat-icon">
+            <ClipboardList size={48} />
+          </div>
           <div>
             <div className="stat-value">{stats.todayReservations}</div>
             <div className="stat-label">Today</div>
@@ -174,7 +198,9 @@ const ReservationManagement = () => {
         </div>
 
         <div className="stat-card orange">
-          <div className="stat-icon">⏰</div>
+          <div className="stat-icon">
+            <Clock size={48} />
+          </div>
           <div>
             <div className="stat-value">{stats.upcomingReservations}</div>
             <div className="stat-label">Upcoming</div>
@@ -182,7 +208,9 @@ const ReservationManagement = () => {
         </div>
 
         <div className="stat-card purple">
-          <div className="stat-icon">✅</div>
+          <div className="stat-icon">
+            <CheckCircle2 size={48} />
+          </div>
           <div>
             <div className="stat-value">{stats.completedReservations}</div>
             <div className="stat-label">Completed</div>
@@ -233,9 +261,11 @@ const ReservationManagement = () => {
       {/* Reservations Table */}
       {reservations.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">📅</div>
-          <h3>No reservations found</h3>
-          <p>Reservations will appear here</p>
+          <div className="empty-icon">
+            <Calendar size={96} />
+          </div>
+          <h3>No Reservations Found</h3>
+          <p>There are no reservations matching your filter criteria</p>
         </div>
       ) : (
         <div className="reservations-table-container">
@@ -271,7 +301,8 @@ const ReservationManagement = () => {
                   </td>
                   <td>
                     <span className="guests-badge">
-                      👥 {reservation.partySize || 0}
+                      <Users size={16} style={{ marginRight: '0.25rem', display: 'inline' }} />
+                      {reservation.partySize || 0}
                     </span>
                   </td>
                   <td>
@@ -295,7 +326,7 @@ const ReservationManagement = () => {
                         }}
                         title="View Details"
                       >
-                        👁️
+                        <Eye size={18} />
                       </button>
                       {reservation.status === 'pending' && (
                         <button
@@ -303,7 +334,7 @@ const ReservationManagement = () => {
                           onClick={() => updateStatus(reservation._id, 'confirmed')}
                           title="Confirm"
                         >
-                          ✅
+                          <Check size={18} />
                         </button>
                       )}
                       {reservation.status === 'confirmed' && (
@@ -312,7 +343,7 @@ const ReservationManagement = () => {
                           onClick={() => updateStatus(reservation._id, 'seated')}
                           title="Mark as Seated"
                         >
-                          🪑
+                          <Armchair size={18} />
                         </button>
                       )}
                       {reservation.status === 'seated' && (
@@ -321,7 +352,7 @@ const ReservationManagement = () => {
                           onClick={() => updateStatus(reservation._id, 'completed')}
                           title="Complete"
                         >
-                          ✅
+                          <CheckCircle2 size={18} />
                         </button>
                       )}
                       <button
@@ -329,7 +360,7 @@ const ReservationManagement = () => {
                         onClick={() => handleDelete(reservation._id)}
                         title="Delete"
                       >
-                        🗑️
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   </td>
@@ -347,13 +378,16 @@ const ReservationManagement = () => {
             <div className="modal-header">
               <h2>Reservation Details - {selectedReservation.confirmationCode}</h2>
               <button className="close-btn" onClick={() => setShowModal(false)}>
-                ✕
+                <X size={20} />
               </button>
             </div>
 
             <div className="modal-body">
               <div className="detail-section">
-                <h3>👤 Customer Information</h3>
+                <h3>
+                  <User size={20} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                  Customer Information
+                </h3>
                 <div className="detail-grid">
                   <div className="detail-item">
                     <span className="detail-label">Name:</span>
@@ -373,7 +407,10 @@ const ReservationManagement = () => {
               </div>
 
               <div className="detail-section">
-                <h3>📅 Reservation Details</h3>
+                <h3>
+                  <Calendar size={20} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                  Reservation Details
+                </h3>
                 <div className="detail-grid">
                   <div className="detail-item">
                     <span className="detail-label">Date:</span>
@@ -385,7 +422,10 @@ const ReservationManagement = () => {
                   </div>
                   <div className="detail-item">
                     <span className="detail-label">Guests:</span>
-                    <span>👥 {selectedReservation.partySize}</span>
+                    <span>
+                      <Users size={16} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                      {selectedReservation.partySize}
+                    </span>
                   </div>
                   <div className="detail-item">
                     <span className="detail-label">Status:</span>
@@ -417,7 +457,10 @@ const ReservationManagement = () => {
 
               {selectedReservation.specialRequests && (
                 <div className="detail-section">
-                  <h3>📝 Special Requests</h3>
+                  <h3>
+                    <FileText size={20} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                    Special Requests
+                  </h3>
                   <p className="special-requests">
                     {selectedReservation.specialRequests}
                   </p>
@@ -431,7 +474,8 @@ const ReservationManagement = () => {
                   className="btn-confirm-modal"
                   onClick={() => updateStatus(selectedReservation._id, 'confirmed')}
                 >
-                  ✅ Confirm Reservation
+                  <Check size={18} style={{ marginRight: '0.5rem' }} />
+                  Confirm Reservation
                 </button>
               )}
               {selectedReservation.status === 'confirmed' && (
@@ -439,7 +483,8 @@ const ReservationManagement = () => {
                   className="btn-seat-modal"
                   onClick={() => updateStatus(selectedReservation._id, 'seated')}
                 >
-                  🪑 Mark as Seated
+                  <Armchair size={18} style={{ marginRight: '0.5rem' }} />
+                  Mark as Seated
                 </button>
               )}
               {selectedReservation.status === 'seated' && (
@@ -447,14 +492,16 @@ const ReservationManagement = () => {
                   className="btn-complete-modal"
                   onClick={() => updateStatus(selectedReservation._id, 'completed')}
                 >
-                  ✅ Complete
+                  <CheckCircle2 size={18} style={{ marginRight: '0.5rem' }} />
+                  Complete
                 </button>
               )}
               <button
                 className="btn-cancel-modal"
                 onClick={() => updateStatus(selectedReservation._id, 'cancelled')}
               >
-                ❌ Cancel Reservation
+                <X size={18} style={{ marginRight: '0.5rem' }} />
+                Cancel Reservation
               </button>
               <button className="btn-close" onClick={() => setShowModal(false)}>
                 Close

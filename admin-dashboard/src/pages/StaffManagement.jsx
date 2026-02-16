@@ -1,5 +1,26 @@
 // admin-dashboard/src/pages/StaffManagement.jsx
 import React, { useState, useEffect } from 'react';
+import {
+  Users,
+  UserPlus,
+  Sprout,
+  CheckCircle2,
+  Pause,
+  Crown,
+  Mail,
+  Phone,
+  Building2,
+  Calendar,
+  Eye,
+  Edit,
+  Trash2,
+  X,
+  TrendingUp,
+  ChefHat,
+  Utensils,
+  DollarSign,
+  BarChart3
+} from 'lucide-react';
 import StaffForm from '../components/StaffForm';
 import '../styles/staff-management.css';
 
@@ -124,13 +145,14 @@ const StaffManagement = () => {
 
   const getRoleIcon = (role) => {
     const icons = {
-      admin: '👑',
-      manager: '📊',
-      chef: '👨‍🍳',
-      waiter: '🍽️',
-      cashier: '💰'
+      admin: Crown,
+      manager: BarChart3,
+      chef: ChefHat,
+      waiter: Utensils,
+      cashier: DollarSign
     };
-    return icons[role] || '👤';
+    const IconComponent = icons[role] || Users;
+    return <IconComponent size={18} style={{ display: 'inline', marginRight: '0.5rem' }} />;
   };
 
   const getStatusColor = (status) => {
@@ -171,15 +193,20 @@ const StaffManagement = () => {
     <div className="staff-page">
       <div className="staff-header">
         <div>
-          <h1>👥 Staff Management</h1>
+          <h1>
+            <Users size={36} style={{ display: 'inline-block', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+            Staff Management
+          </h1>
           <p>Manage your restaurant team</p>
         </div>
         <div className="header-actions">
           <button onClick={handleSeedStaff} className="btn-secondary">
-            🌱 Add Sample Staff
+            <Sprout size={20} style={{ marginRight: '0.5rem' }} />
+            Add Sample Staff
           </button>
           <button onClick={() => setShowAddModal(true)} className="btn-primary">
-            ➕ Add Staff Member
+            <UserPlus size={20} style={{ marginRight: '0.5rem' }} />
+            Add Staff Member
           </button>
         </div>
       </div>
@@ -188,7 +215,9 @@ const StaffManagement = () => {
       {stats && (
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon">👥</div>
+            <div className="stat-icon">
+              <Users size={48} />
+            </div>
             <div className="stat-content">
               <div className="stat-value">{stats.totalStaff}</div>
               <div className="stat-label">Total Staff</div>
@@ -196,7 +225,9 @@ const StaffManagement = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">✅</div>
+            <div className="stat-icon">
+              <CheckCircle2 size={48} />
+            </div>
             <div className="stat-content">
               <div className="stat-value">{stats.onShift}</div>
               <div className="stat-label">On Shift Now</div>
@@ -204,7 +235,9 @@ const StaffManagement = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">⏸️</div>
+            <div className="stat-icon">
+              <Pause size={48} />
+            </div>
             <div className="stat-content">
               <div className="stat-value">{stats.inactive}</div>
               <div className="stat-label">Inactive</div>
@@ -212,7 +245,9 @@ const StaffManagement = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">👑</div>
+            <div className="stat-icon">
+              <Crown size={48} />
+            </div>
             <div className="stat-content">
               <div className="stat-value">
                 {stats.byRole.find(r => r._id === 'admin')?.count || 0}
@@ -235,35 +270,42 @@ const StaffManagement = () => {
           className={`filter-tab ${filter === 'admin' ? 'active' : ''}`}
           onClick={() => setFilter('admin')}
         >
-          👑 Admins ({staff.filter(s => s.role === 'admin').length})
+          <Crown size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+          Admins ({staff.filter(s => s.role === 'admin').length})
         </button>
         <button
           className={`filter-tab ${filter === 'manager' ? 'active' : ''}`}
           onClick={() => setFilter('manager')}
         >
-          📊 Managers ({staff.filter(s => s.role === 'manager').length})
+          <BarChart3 size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+          Managers ({staff.filter(s => s.role === 'manager').length})
         </button>
         <button
           className={`filter-tab ${filter === 'chef' ? 'active' : ''}`}
           onClick={() => setFilter('chef')}
         >
-          👨‍🍳 Chefs ({staff.filter(s => s.role === 'chef').length})
+          <ChefHat size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+          Chefs ({staff.filter(s => s.role === 'chef').length})
         </button>
         <button
           className={`filter-tab ${filter === 'waiter' ? 'active' : ''}`}
           onClick={() => setFilter('waiter')}
         >
-          🍽️ Waiters ({staff.filter(s => s.role === 'waiter').length})
+          <Utensils size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+          Waiters ({staff.filter(s => s.role === 'waiter').length})
         </button>
       </div>
 
       {/* Staff Grid */}
       {filteredStaff.length === 0 ? (
         <div className="no-staff">
-          <div className="no-staff-icon">👥</div>
+          <div className="no-staff-icon">
+            <Users size={96} />
+          </div>
           <h3>No staff members yet</h3>
           <p>Add your first staff member to get started!</p>
           <button onClick={handleSeedStaff} className="btn-primary">
+            <Sprout size={20} style={{ marginRight: '0.5rem' }} />
             Add Sample Staff
           </button>
         </div>
@@ -302,19 +344,19 @@ const StaffManagement = () => {
 
                 <div className="staff-info">
                   <div className="info-row">
-                    <span>📧</span>
+                    <Mail size={18} />
                     <span>{member.email}</span>
                   </div>
                   <div className="info-row">
-                    <span>📱</span>
+                    <Phone size={18} />
                     <span>{member.phone}</span>
                   </div>
                   <div className="info-row">
-                    <span>🏢</span>
+                    <Building2 size={18} />
                     <span>{member.department}</span>
                   </div>
                   <div className="info-row">
-                    <span>📅</span>
+                    <Calendar size={18} />
                     <span>Hired {formatDate(member.hireDate)}</span>
                   </div>
                 </div>
@@ -343,19 +385,19 @@ const StaffManagement = () => {
                   className="card-btn"
                   onClick={() => setSelectedStaff(member)}
                 >
-                  👁️ View
+                  <Eye size={18} /> View
                 </button>
                 <button 
                   className="card-btn"
                   onClick={() => handleEditStaff(member)}
                 >
-                  ✏️ Edit
+                  <Edit size={18} /> Edit
                 </button>
                 <button 
                   className="card-btn danger"
                   onClick={() => handleDeleteStaff(member)}
                 >
-                  🗑️ Remove
+                  <Trash2 size={18} /> Remove
                 </button>
               </div>
             </div>
@@ -370,7 +412,7 @@ const StaffManagement = () => {
             <div className="modal-header">
               <h2>{editingStaff ? 'Edit Staff Member' : 'Add New Staff Member'}</h2>
               <button className="close-btn" onClick={handleCloseModal}>
-                ✕
+                <X size={20} />
               </button>
             </div>
             <div className="modal-body">
@@ -391,11 +433,11 @@ const StaffManagement = () => {
             <div className="modal-header">
               <h2>{selectedStaff.firstName} {selectedStaff.lastName}</h2>
               <button className="close-btn" onClick={() => setSelectedStaff(null)}>
-                ✕
+                <X size={20} />
               </button>
             </div>
             <div className="modal-body">
-              <p style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+              <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
                 Detailed staff view coming soon!
               </p>
             </div>
