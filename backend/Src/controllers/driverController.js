@@ -59,12 +59,22 @@ exports.getDriver = async (req, res) => {
 exports.createDriver = async (req, res) => {
   try {
     const { password, ...driverData } = req.body;
-    
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
+    // Pre-generate driverId so required validation passes before the pre-save hook runs
+    const count = await Driver.countDocuments();
+    const driverId = `DRV-${String(count + 1).padStart(4, '0')}`;
+
+    // Generate profile image from initials
+    const initials = `${driverData.firstName?.charAt(0) || 'D'}${driverData.lastName?.charAt(0) || 'R'}`;
+    const profileImage = `https://ui-avatars.com/api/?name=${initials}&background=10b981&color=fff&size=150&bold=true`;
+
     const driver = await Driver.create({
       ...driverData,
+      driverId,
+      profileImage,
       password: hashedPassword
     });
 
