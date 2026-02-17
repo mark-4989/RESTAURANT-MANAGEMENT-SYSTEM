@@ -29,7 +29,7 @@ import {
 import StaffForm from '../components/StaffForm';
 import '../styles/staff-management.css';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://restaurant-management-system-1-7v0m.onrender.com/api';
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
