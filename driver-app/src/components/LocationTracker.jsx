@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Navigation, Radio } from 'lucide-react';
 import { toast } from 'react-toastify';
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://restaurant-management-system-1-7v0m.onrender.com/api';
+
 const LocationTracker = ({ driverId, currentDelivery, isActive }) => {
   const [isTracking, setIsTracking] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
@@ -12,7 +14,7 @@ const LocationTracker = ({ driverId, currentDelivery, isActive }) => {
     if (!currentDelivery) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/drivers/${driverId}/location/live`, {
+      const response = await fetch(`${API_URL}/drivers/${driverId}/location/live`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
