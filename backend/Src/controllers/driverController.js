@@ -278,12 +278,21 @@ exports.getDriverStats = async (req, res) => {
   }
 };
 
-// Driver login
+// Driver login — accepts phone OR email
 exports.driverLogin = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    
-    const driver = await Driver.findOne({ email }).select('+password');
+    const { phone, email, password } = req.body;
+
+    if (!password || (!phone && !email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone/email and password are required'
+      });
+    }
+
+    // Look up by phone first, then fall back to email
+    const query = phone ? { phone } : { email: email.toLowerCase() };
+    const driver = await Driver.findOne(query).select('+password');
     
     if (!driver) {
       return res.status(401).json({
