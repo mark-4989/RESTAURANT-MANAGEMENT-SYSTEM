@@ -5,17 +5,17 @@ const {
   generatePrintableQRPage
 } = require('../utils/qrCodeGenerator');
 
+const CUSTOMER_APP_URL = process.env.QR_CODE_BASE_URL || 'https://restaurant-management-system-zeta-ivory.vercel.app';
+
 /**
  * Generate QR code for a single table
  */
 exports.generateSingleQR = async (req, res) => {
   try {
     const { tableNumber } = req.params;
-    const customerAppUrl = process.env.CUSTOMER_APP_URL || 'http://localhost:5173';
-
     console.log('📱 Generating QR code for table:', tableNumber);
 
-    const qrCode = await generateTableQRCode(tableNumber, customerAppUrl);
+    const qrCode = await generateTableQRCode(tableNumber, CUSTOMER_APP_URL);
 
     res.status(200).json({
       success: true,
@@ -54,14 +54,12 @@ exports.generateMultipleQR = async (req, res) => {
       });
     }
 
-    const customerAppUrl = process.env.CUSTOMER_APP_URL || 'http://localhost:5173';
-
     console.log(`📱 Generating QR codes for tables ${startTable} to ${endTable}`);
 
     const result = await generateMultipleTableQRCodes(
       parseInt(startTable),
       parseInt(endTable),
-      customerAppUrl
+      CUSTOMER_APP_URL
     );
 
     res.status(200).json({
@@ -86,11 +84,9 @@ exports.generateMultipleQR = async (req, res) => {
 exports.getPrintableQR = async (req, res) => {
   try {
     const { tableNumber } = req.params;
-    const customerAppUrl = process.env.CUSTOMER_APP_URL || 'http://localhost:5173';
-
     console.log('🖨️ Generating printable QR page for table:', tableNumber);
 
-    const html = await generatePrintableQRPage(tableNumber, customerAppUrl);
+    const html = await generatePrintableQRPage(tableNumber, CUSTOMER_APP_URL);
 
     res.setHeader('Content-Type', 'text/html');
     res.send(html);
