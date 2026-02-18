@@ -48,6 +48,8 @@ const DeliveryManagement = () => {
   const customerMarkerRef = useRef(null);
   const activeMarkersRef = useRef({});
   const routeLinesRef = useRef({});
+  const driverTrailRef = useRef([]);       // breadcrumb coords for single-order tracking
+  const liveDriverTrailsRef = useRef({}); // breadcrumb coords per driverId on live map
 
   useEffect(() => {
     fetchDeliveryOrders();
@@ -142,27 +144,79 @@ const DeliveryManagement = () => {
 
     mapInstanceRef.current = new mapboxgl.Map({
       container: mapRef.current,
-      style: "mapbox://styles/mapbox/dark-v11",
+      style: "mapbox://styles/mapbox/streets-v12",
       center: [order.deliveryLng, order.deliveryLat],
-      zoom: 13,
-      pitch: 45,
-      bearing: -17.6,
+      zoom: 14,
+      pitch: 50,
+      bearing: -10,
     });
 
-    mapInstanceRef.current.addControl(new mapboxgl.NavigationControl());
+    mapInstanceRef.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+    mapInstanceRef.current.addControl(new mapboxgl.FullscreenControl(), "top-right");
 
-    customerMarkerRef.current = new mapboxgl.Marker({
-      color: "#ef4444",
-      scale: 1.2,
-    })
+    // Reset trail for this order
+    driverTrailRef.current = [];
+
+    mapInstanceRef.current.on("load", () => {
+      // Pre-add trail source so we can update it later
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.addSource("driver-trail", {
+          type: "geojson",
+          data: { type: "Feature", geometry: { type: "LineString", coordinates: [] } },
+        });
+        mapInstanceRef.current.addLayer({
+          id: "driver-trail-layer",
+          type: "line",
+          source: "driver-trail",
+          layout: { "line-join": "round", "line-cap": "round" },
+          paint: {
+            "line-color": "#f97316",
+            "line-width": 4,
+            "line-opacity": 0.85,
+            "line-dasharray": [2, 1.5],
+          },
+        });
+      }
+    });
+
+    // Styled customer marker
+    const customerEl = document.createElement("div");
+    customerEl.innerHTML = `
+      <div style="
+        width:44px; height:44px; background:#ef4444; border-radius:50% 50% 50% 0;
+        transform:rotate(-45deg); display:flex; align-items:center; justify-content:center;
+        box-shadow:0 4px 20px rgba(239,68,68,0.5); border:3px solid #fff;
+        position:relative;
+      ">
+        <span style="transform:rotate(45deg); font-size:20px; line-height:1;">🏠</span>
+      </div>
+      <div style="
+        position:absolute; bottom:-22px; left:50%; transform:translateX(-50%);
+        background:#ef4444; color:#fff; font-size:10px; font-weight:800; padding:2px 8px;
+        border-radius:10px; white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,0.25);
+      ">CUSTOMER</div>
+    `;
+    customerEl.style.position = "relative";
+    customerEl.style.cursor = "pointer";
+
+    customerMarkerRef.current = new mapboxgl.Marker({ element: customerEl, anchor: "bottom" })
       .setLngLat([order.deliveryLng, order.deliveryLat])
       .setPopup(
-        new mapboxgl.Popup({ offset: 25 }).setHTML(`
-        <div style="padding: 12px; background: #1a1a2e; border-radius: 8px;">
-          <strong style="color: #fff; font-size: 14px;">📍 Delivery Location</strong><br/>
-          <span style="color: #aaa; font-size: 12px;">${order.deliveryAddress}</span>
-        </div>
-      `),
+        new mapboxgl.Popup({ offset: 30, closeButton: false })
+          .setHTML(`
+          <div style="
+            padding:14px 16px; background:#fff; border-radius:12px;
+            font-family:system-ui,sans-serif; box-shadow:0 8px 30px rgba(0,0,0,0.12);
+            min-width:200px;
+          ">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <div style="width:10px;height:10px;background:#ef4444;border-radius:50%;"></div>
+              <strong style="color:#111; font-size:13px;">Delivery Destination</strong>
+            </div>
+            <div style="color:#444; font-size:12px; line-height:1.5;">${order.deliveryAddress}</div>
+            ${order.customerName ? `<div style="margin-top:8px;color:#888;font-size:11px;">👤 ${order.customerName}</div>` : ""}
+          </div>
+        `),
       )
       .addTo(mapInstanceRef.current);
 
@@ -176,24 +230,54 @@ const DeliveryManagement = () => {
   const updateDriverMarker = (location) => {
     if (!mapInstanceRef.current || !window.mapboxgl) return;
 
+    // Append to trail
+    driverTrailRef.current.push([location.lng, location.lat]);
+
+    // Update trail on map if source is loaded
+    if (mapInstanceRef.current.getSource("driver-trail")) {
+      mapInstanceRef.current.getSource("driver-trail").setData({
+        type: "Feature",
+        geometry: { type: "LineString", coordinates: driverTrailRef.current },
+      });
+    }
+
     if (driverMarkerRef.current) {
       driverMarkerRef.current.setLngLat([location.lng, location.lat]);
     } else {
       const el = document.createElement("div");
-      el.innerHTML = "🚗";
-      el.style.fontSize = "30px";
+      el.innerHTML = `
+        <div style="
+          width:48px;height:48px;background:linear-gradient(135deg,#10b981,#059669);
+          border-radius:50%;display:flex;align-items:center;justify-content:center;
+          box-shadow:0 0 0 4px rgba(16,185,129,0.3), 0 4px 20px rgba(16,185,129,0.5);
+          border:3px solid #fff; font-size:22px; cursor:pointer;
+          animation:driverPulse 2s ease-in-out infinite;
+        ">🛵</div>
+        <div style="
+          position:absolute; bottom:-20px; left:50%; transform:translateX(-50%);
+          background:#10b981; color:#fff; font-size:10px; font-weight:800;
+          padding:2px 8px; border-radius:10px; white-space:nowrap;
+          box-shadow:0 2px 8px rgba(0,0,0,0.25);
+        ">DRIVER</div>
+      `;
+      el.style.position = "relative";
       el.style.cursor = "pointer";
 
-      driverMarkerRef.current = new window.mapboxgl.Marker({
-        element: el,
-        anchor: "center",
-      })
+      driverMarkerRef.current = new window.mapboxgl.Marker({ element: el, anchor: "center" })
         .setLngLat([location.lng, location.lat])
         .setPopup(
-          new window.mapboxgl.Popup({ offset: 25 }).setHTML(`
-          <div style="padding: 12px; background: #1a1a2e; border-radius: 8px;">
-            <strong style="color: #10b981; font-size: 14px;">🚗 Driver</strong><br/>
-            <span style="color: #aaa; font-size: 12px;">On the way!</span>
+          new window.mapboxgl.Popup({ offset: 30, closeButton: false }).setHTML(`
+          <div style="
+            padding:14px 16px; background:#fff; border-radius:12px;
+            font-family:system-ui,sans-serif; min-width:180px;
+            box-shadow:0 8px 30px rgba(0,0,0,0.12);
+          ">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <div style="width:10px;height:10px;background:#10b981;border-radius:50%;"></div>
+              <strong style="color:#111;font-size:13px;">Driver – En Route</strong>
+            </div>
+            <div style="color:#888;font-size:11px;">Lat: ${location.lat.toFixed(5)}</div>
+            <div style="color:#888;font-size:11px;">Lng: ${location.lng.toFixed(5)}</div>
           </div>
         `),
         )
@@ -235,9 +319,17 @@ const DeliveryManagement = () => {
             source: "route",
             layout: { "line-join": "round", "line-cap": "round" },
             paint: {
-              "line-color": "#10b981",
-              "line-width": 4,
-              "line-opacity": 0.8,
+              "line-color": "#3b82f6",
+              "line-width": 6,
+              "line-opacity": 0.9,
+              "line-gradient": [
+                "interpolate",
+                ["linear"],
+                ["line-progress"],
+                0, "#10b981",
+                0.5, "#3b82f6",
+                1, "#8b5cf6",
+              ],
             },
           });
         }
@@ -262,9 +354,9 @@ const DeliveryManagement = () => {
     if (activeOrdersWithLocation.length === 0) {
       liveMapInstanceRef.current = new mapboxgl.Map({
         container: liveMapRef.current,
-        style: "mapbox://styles/mapbox/dark-v11",
+        style: "mapbox://styles/mapbox/streets-v12",
         center: [36.8219, -1.2921],
-        zoom: 11,
+        zoom: 12,
         pitch: 45,
       });
       return;
@@ -277,22 +369,87 @@ const DeliveryManagement = () => {
 
     liveMapInstanceRef.current = new mapboxgl.Map({
       container: liveMapRef.current,
-      style: "mapbox://styles/mapbox/dark-v11",
+      style: "mapbox://styles/mapbox/streets-v12",
       bounds: bounds,
-      fitBoundsOptions: { padding: 80 },
-      pitch: 45,
+      fitBoundsOptions: { padding: 100 },
+      pitch: 50,
     });
 
-    liveMapInstanceRef.current.addControl(new mapboxgl.NavigationControl());
+    liveMapInstanceRef.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+    liveMapInstanceRef.current.addControl(new mapboxgl.FullscreenControl(), "top-right");
+    liveMapInstanceRef.current.addControl(new mapboxgl.ScaleControl({ unit: "metric" }), "bottom-left");
 
-    activeOrdersWithLocation.forEach((order) => {
-      const marker = new mapboxgl.Marker({ color: "#ef4444", scale: 0.9 })
+    liveMapInstanceRef.current.on("load", () => {
+      // Initialize per-driver trail sources on map load
+      Object.keys(liveDriverTrailsRef.current).forEach((driverId) => {
+        const trailId = `trail-${driverId}`;
+        if (!liveMapInstanceRef.current.getSource(trailId)) {
+          liveMapInstanceRef.current.addSource(trailId, {
+            type: "geojson",
+            data: { type: "Feature", geometry: { type: "LineString", coordinates: [] } },
+          });
+          liveMapInstanceRef.current.addLayer({
+            id: `${trailId}-layer`,
+            type: "line",
+            source: trailId,
+            layout: { "line-join": "round", "line-cap": "round" },
+            paint: { "line-color": "#f97316", "line-width": 3, "line-opacity": 0.8, "line-dasharray": [2, 1.5] },
+          });
+        }
+      });
+    });
+
+    // Numbered customer markers
+    activeOrdersWithLocation.forEach((order, index) => {
+      const num = index + 1;
+      const el = document.createElement("div");
+      el.innerHTML = `
+        <div style="
+          position:relative; display:flex; flex-direction:column; align-items:center;
+        ">
+          <div style="
+            width:36px;height:36px;background:#ef4444;border-radius:50% 50% 50% 0;
+            transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;
+            box-shadow:0 4px 16px rgba(239,68,68,0.45);border:2px solid #fff;
+          ">
+            <span style="transform:rotate(45deg);color:#fff;font-weight:900;font-size:14px;">${num}</span>
+          </div>
+          <div style="
+            margin-top:4px;background:#ef4444;color:#fff;font-size:9px;font-weight:800;
+            padding:2px 6px;border-radius:8px;white-space:nowrap;max-width:80px;
+            overflow:hidden;text-overflow:ellipsis;
+            box-shadow:0 2px 8px rgba(0,0,0,0.2);
+          ">${order.orderNumber}</div>
+        </div>
+      `;
+      el.style.cursor = "pointer";
+
+      const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
         .setLngLat([order.deliveryLng, order.deliveryLat])
         .setPopup(
-          new mapboxgl.Popup({ offset: 25 }).setHTML(`
-          <div style="padding: 10px; background: #1a1a2e; border-radius: 6px;">
-            <strong style="color: #fff;">${order.orderNumber}</strong><br/>
-            <span style="color: #aaa; font-size: 12px;">${order.customerName}</span>
+          new mapboxgl.Popup({ offset: 30, closeButton: false }).setHTML(`
+          <div style="
+            padding:14px 16px;background:#fff;border-radius:12px;
+            font-family:system-ui,sans-serif;min-width:210px;
+            box-shadow:0 8px 30px rgba(0,0,0,0.12);
+          ">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <div style="
+                width:24px;height:24px;background:#ef4444;border-radius:50%;
+                display:flex;align-items:center;justify-content:center;
+                color:#fff;font-weight:900;font-size:12px;
+              ">${num}</div>
+              <strong style="color:#111;font-size:14px;">${order.orderNumber}</strong>
+            </div>
+            <div style="color:#555;font-size:12px;margin-bottom:4px;">👤 ${order.customerName}</div>
+            <div style="color:#888;font-size:11px;margin-bottom:4px;">📍 ${order.deliveryAddress}</div>
+            <div style="
+              margin-top:10px;padding:6px 10px;
+              background:${getStatusColor(order.deliveryStatus)}18;
+              border-left:3px solid ${getStatusColor(order.deliveryStatus)};
+              border-radius:4px;color:${getStatusColor(order.deliveryStatus)};
+              font-weight:700;font-size:11px;
+            ">${order.deliveryStatus?.toUpperCase() || "PENDING"}</div>
           </div>
         `),
         )
@@ -311,23 +468,74 @@ const DeliveryManagement = () => {
 
     const markerId = `driver-${driverId}`;
 
+    // Update trail
+    if (!liveDriverTrailsRef.current[driverId]) {
+      liveDriverTrailsRef.current[driverId] = [];
+    }
+    liveDriverTrailsRef.current[driverId].push([location.lng, location.lat]);
+
+    const trailId = `trail-${driverId}`;
+    if (liveMapInstanceRef.current.getSource(trailId)) {
+      liveMapInstanceRef.current.getSource(trailId).setData({
+        type: "Feature",
+        geometry: { type: "LineString", coordinates: liveDriverTrailsRef.current[driverId] },
+      });
+    } else if (liveMapInstanceRef.current.isStyleLoaded()) {
+      liveMapInstanceRef.current.addSource(trailId, {
+        type: "geojson",
+        data: {
+          type: "Feature",
+          geometry: { type: "LineString", coordinates: liveDriverTrailsRef.current[driverId] },
+        },
+      });
+      liveMapInstanceRef.current.addLayer({
+        id: `${trailId}-layer`,
+        type: "line",
+        source: trailId,
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": "#f97316", "line-width": 3, "line-opacity": 0.85, "line-dasharray": [2, 1.5] },
+      });
+    }
+
     if (activeMarkersRef.current[markerId]) {
       activeMarkersRef.current[markerId].setLngLat([location.lng, location.lat]);
     } else {
       const el = document.createElement("div");
-      el.innerHTML = "🚗";
-      el.style.fontSize = "24px";
+      el.innerHTML = `
+        <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
+          <div style="
+            width:44px;height:44px;
+            background:linear-gradient(135deg,#10b981,#059669);
+            border-radius:50%;display:flex;align-items:center;justify-content:center;
+            box-shadow:0 0 0 5px rgba(16,185,129,0.25), 0 4px 20px rgba(16,185,129,0.5);
+            border:2px solid #fff;font-size:20px;cursor:pointer;
+          ">🛵</div>
+          <div style="
+            margin-top:3px;background:#10b981;color:#fff;font-size:9px;font-weight:800;
+            padding:2px 6px;border-radius:8px;white-space:nowrap;
+            box-shadow:0 2px 8px rgba(0,0,0,0.2);
+          ">DRIVER</div>
+        </div>
+      `;
       el.style.cursor = "pointer";
 
-      const marker = new window.mapboxgl.Marker({
-        element: el,
-        anchor: "center",
-      })
+      const marker = new window.mapboxgl.Marker({ element: el, anchor: "bottom" })
         .setLngLat([location.lng, location.lat])
         .setPopup(
-          new window.mapboxgl.Popup({ offset: 25 }).setHTML(`
-          <div style="padding: 10px; background: #1a1a2e; border-radius: 6px;">
-            <strong style="color: #10b981;">Driver ${driverId.slice(0, 6)}</strong>
+          new window.mapboxgl.Popup({ offset: 30, closeButton: false }).setHTML(`
+          <div style="
+            padding:14px 16px;background:#fff;border-radius:12px;
+            font-family:system-ui,sans-serif;min-width:180px;
+            box-shadow:0 8px 30px rgba(0,0,0,0.12);
+          ">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <div style="width:10px;height:10px;background:#10b981;border-radius:50%;
+                box-shadow:0 0 0 3px rgba(16,185,129,0.25);"></div>
+              <strong style="color:#111;font-size:13px;">Driver – Live</strong>
+            </div>
+            <div style="color:#888;font-size:11px;">ID: ${driverId.slice(0, 8)}...</div>
+            <div style="color:#888;font-size:11px;">Lat: ${location.lat.toFixed(5)}</div>
+            <div style="color:#888;font-size:11px;">Lng: ${location.lng.toFixed(5)}</div>
           </div>
         `),
         )
@@ -370,9 +578,9 @@ const DeliveryManagement = () => {
             source: routeId,
             layout: { "line-join": "round", "line-cap": "round" },
             paint: {
-              "line-color": "#10b981",
-              "line-width": 3,
-              "line-opacity": 0.6,
+              "line-color": "#3b82f6",
+              "line-width": 5,
+              "line-opacity": 0.75,
             },
           });
         }
@@ -464,6 +672,7 @@ const DeliveryManagement = () => {
 
   const closeTrackingModal = () => {
     setTrackingOrder(null);
+    driverTrailRef.current = [];
     if (mapInstanceRef.current) {
       mapInstanceRef.current.remove();
       mapInstanceRef.current = null;
@@ -485,6 +694,7 @@ const DeliveryManagement = () => {
     }
     activeMarkersRef.current = {};
     routeLinesRef.current = {};
+    liveDriverTrailsRef.current = {};
   };
 
   const calculateTimeSince = (date) => {
@@ -1398,9 +1608,23 @@ const DeliveryManagement = () => {
         @keyframes ping {
           75%, 100% { transform: scale(2); opacity: 0; }
         }
+        @keyframes driverPulse {
+          0%, 100% { box-shadow: 0 0 0 4px rgba(16,185,129,0.3), 0 4px 20px rgba(16,185,129,0.5); }
+          50% { box-shadow: 0 0 0 8px rgba(16,185,129,0.15), 0 4px 30px rgba(16,185,129,0.7); }
+        }
         .tracking-modal { max-width: 900px !important; }
         .live-map-modal { max-width: 95vw !important; width: 95vw !important; }
         .page-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+
+        /* Mapbox popup overrides – clean white cards */
+        .mapboxgl-popup-content {
+          padding: 0 !important;
+          border-radius: 12px !important;
+          box-shadow: 0 8px 30px rgba(0,0,0,0.15) !important;
+          overflow: hidden;
+        }
+        .mapboxgl-popup-tip { display: none !important; }
+        .mapboxgl-ctrl-logo { display: none !important; }
       `}</style>
     </div>
   );
