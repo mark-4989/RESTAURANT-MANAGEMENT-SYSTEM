@@ -4,6 +4,9 @@ import { useUser } from '@clerk/clerk-react';
 import { MapPin, X, Navigation, Phone, Package, Clock, Radio, Truck } from 'lucide-react';
 import '../styles/MyOrders.css';
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://restaurant-management-system-1-7v0m.onrender.com/api';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://restaurant-management-system-1-7v0m.onrender.com';
+
 const MyOrders = () => {
   const { user } = useUser();
   const [orders, setOrders] = useState([]);
@@ -34,7 +37,8 @@ const MyOrders = () => {
   }, [user]);
 
   const initializeWebSocket = () => {
-    socketRef.current = new WebSocket('ws://localhost:5000');
+    const wsUrl = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+    socketRef.current = new WebSocket(wsUrl);
     
     socketRef.current.onopen = () => {
       console.log('📡 Connected to tracking server');
@@ -79,7 +83,7 @@ const MyOrders = () => {
   const fetchOrders = async () => {
     try {
       const customerName = user.fullName || user.firstName || 'Guest';
-      const response = await fetch(`http://localhost:5000/api/orders?customerName=${encodeURIComponent(customerName)}`);
+      const response = await fetch(`${API_URL}/orders?customerName=${encodeURIComponent(customerName)}`);
       const data = await response.json();
       
       if (data.success) {
