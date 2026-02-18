@@ -93,21 +93,48 @@ const OrderPage = () => {
 
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/dark-v11',
+        style: 'mapbox://styles/mapbox/streets-v12',
         center: [36.8219, -1.2921],
-        zoom: 12
+        zoom: 13,
+        pitch: 40,
       });
 
       map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+      map.current.addControl(new mapboxgl.ScaleControl({ unit: 'metric' }), 'bottom-left');
+      map.current.addControl(new mapboxgl.GeolocateControl({
+        positionOptions: { enableHighAccuracy: true },
+        trackUserLocation: false,
+        showUserHeading: false,
+      }), 'top-right');
 
       map.current.on('click', (e) => {
         const { lng, lat } = e.lngLat;
         
-        if (marker.current) {
-          marker.current.remove();
-        }
+        if (marker.current) marker.current.remove();
 
-        marker.current = new mapboxgl.Marker({ color: '#ef4444' })
+        // Styled drop pin marker
+        const el = document.createElement('div');
+        el.innerHTML = `
+          <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
+            <div style="
+              width:44px;height:44px;background:linear-gradient(135deg,#ef4444,#dc2626);
+              border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+              display:flex;align-items:center;justify-content:center;
+              box-shadow:0 4px 20px rgba(239,68,68,0.5);border:3px solid #fff;
+            ">
+              <span style="transform:rotate(45deg);font-size:20px;">🏠</span>
+            </div>
+            <div style="
+              margin-top:5px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;
+              padding:3px 8px;border-radius:10px;white-space:nowrap;
+              box-shadow:0 2px 8px rgba(0,0,0,0.2);
+            ">DROP HERE</div>
+          </div>
+        `;
+        el.style.cursor = 'pointer';
+
+        marker.current = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
           .setLngLat([lng, lat])
           .addTo(map.current);
 
@@ -116,6 +143,22 @@ const OrderPage = () => {
           .then(data => {
             const address = data.features[0]?.place_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
             
+            marker.current.setPopup(
+              new mapboxgl.Popup({ offset: 30, closeButton: false }).setHTML(`
+                <div style="
+                  padding:14px 16px;background:#fff;border-radius:12px;
+                  font-family:system-ui,sans-serif;min-width:220px;
+                  box-shadow:0 8px 30px rgba(0,0,0,0.12);
+                ">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                    <div style="width:10px;height:10px;background:#ef4444;border-radius:50%;"></div>
+                    <strong style="color:#111;font-size:13px;">Delivery Location Set ✓</strong>
+                  </div>
+                  <div style="color:#555;font-size:12px;line-height:1.5;">${address}</div>
+                </div>
+              `)
+            ).togglePopup();
+
             setOrderDetails(prev => ({
               ...prev,
               deliveryAddress: address,
@@ -565,9 +608,9 @@ const OrderPage = () => {
               {orderType === 'delivery' && (
                 <>
                   <div style={{marginBottom: '1rem'}}>
-                    <label style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--text-primary)', fontWeight: 600}}>
+                    <label style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', color: 'var(--text-primary)', fontWeight: 600}}>
                       <span style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-                        <MapPin size={16} /> Click on map to set location
+                        <MapPin size={16} /> Click on map to drop your pin
                       </span>
                       <button
                         onClick={useCurrentLocation}
@@ -592,13 +635,19 @@ const OrderPage = () => {
                       ref={mapContainer} 
                       style={{
                         width: '100%', 
-                        height: '300px', 
-                        borderRadius: '10px', 
+                        height: '320px', 
+                        borderRadius: '14px', 
                         overflow: 'hidden', 
-                        border: '1px solid var(--border-primary)',
-                        cursor: 'crosshair'
+                        border: '2px solid var(--border-primary)',
+                        cursor: 'crosshair',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
                       }} 
                     />
+                    <style>{`
+                      .mapboxgl-popup-content { padding:0!important;border-radius:12px!important;box-shadow:0 8px 30px rgba(0,0,0,0.15)!important;overflow:hidden; }
+                      .mapboxgl-popup-tip { display:none!important; }
+                      .mapboxgl-ctrl-logo { display:none!important; }
+                    `}</style>
                   </div>
 
                   {orderDetails.deliveryAddress && (

@@ -17,6 +17,7 @@ const MyOrders = () => {
   const driverMarkerRef = useRef(null);
   const destinationMarkerRef = useRef(null);
   const socketRef = useRef(null);
+  const driverTrailRef = useRef([]);
 
   useEffect(() => {
     if (user) {
@@ -102,23 +103,80 @@ const MyOrders = () => {
 
     if (mapInstanceRef.current) mapInstanceRef.current.remove();
 
+    // Reset trail on new order
+    driverTrailRef.current = [];
+
     mapInstanceRef.current = new mapboxgl.Map({
       container: mapRef.current,
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [order.deliveryLng, order.deliveryLat],
-      zoom: 13
+      zoom: 14,
+      pitch: 50,
+      bearing: -10,
     });
 
-    mapInstanceRef.current.addControl(new mapboxgl.NavigationControl());
+    mapInstanceRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    mapInstanceRef.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+    mapInstanceRef.current.addControl(new mapboxgl.ScaleControl({ unit: 'metric' }), 'bottom-left');
 
-    destinationMarkerRef.current = new mapboxgl.Marker({ color: '#ef4444' })
-      .setLngLat([order.deliveryLng, order.deliveryLat])
-      .setPopup(new mapboxgl.Popup().setHTML(`
-        <div style="padding: 8px;">
-          <strong style="color: #333;">📍 Your Delivery Location</strong><br/>
-          <span style="color: #666; font-size: 0.9rem;">${order.deliveryAddress}</span>
+    mapInstanceRef.current.on('load', () => {
+      // Trail source for driver breadcrumbs
+      mapInstanceRef.current.addSource('driver-trail', {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } },
+      });
+      mapInstanceRef.current.addLayer({
+        id: 'driver-trail-layer',
+        type: 'line',
+        source: 'driver-trail',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: {
+          'line-color': '#f97316',
+          'line-width': 4,
+          'line-opacity': 0.85,
+          'line-dasharray': [2, 1.5],
+        },
+      });
+    });
+
+    // Styled customer destination marker
+    const destEl = document.createElement('div');
+    destEl.innerHTML = `
+      <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
+        <div style="
+          width:44px;height:44px;background:linear-gradient(135deg,#ef4444,#dc2626);
+          border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+          display:flex;align-items:center;justify-content:center;
+          box-shadow:0 4px 20px rgba(239,68,68,0.5);border:3px solid #fff;
+        ">
+          <span style="transform:rotate(45deg);font-size:20px;">🏠</span>
         </div>
-      `))
+        <div style="
+          margin-top:5px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;
+          padding:3px 10px;border-radius:10px;white-space:nowrap;
+          box-shadow:0 2px 8px rgba(0,0,0,0.2);
+        ">YOUR LOCATION</div>
+      </div>
+    `;
+    destEl.style.cursor = 'pointer';
+
+    destinationMarkerRef.current = new mapboxgl.Marker({ element: destEl, anchor: 'bottom' })
+      .setLngLat([order.deliveryLng, order.deliveryLat])
+      .setPopup(
+        new mapboxgl.Popup({ offset: 30, closeButton: false }).setHTML(`
+          <div style="
+            padding:14px 16px;background:#fff;border-radius:12px;
+            font-family:system-ui,sans-serif;min-width:220px;
+            box-shadow:0 8px 30px rgba(0,0,0,0.12);
+          ">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <div style="width:10px;height:10px;background:#ef4444;border-radius:50%;"></div>
+              <strong style="color:#111;font-size:13px;">Your Delivery Address</strong>
+            </div>
+            <div style="color:#555;font-size:12px;line-height:1.5;">${order.deliveryAddress}</div>
+          </div>
+        `)
+      )
       .addTo(mapInstanceRef.current);
 
     if (driverLocation) {
@@ -129,31 +187,117 @@ const MyOrders = () => {
   const updateDriverMarker = (location) => {
     if (!mapInstanceRef.current || !window.mapboxgl) return;
 
+    // Append breadcrumb to trail
+    driverTrailRef.current.push([location.lng, location.lat]);
+    if (mapInstanceRef.current.getSource('driver-trail')) {
+      mapInstanceRef.current.getSource('driver-trail').setData({
+        type: 'Feature',
+        geometry: { type: 'LineString', coordinates: driverTrailRef.current },
+      });
+    }
+
     if (driverMarkerRef.current) {
       driverMarkerRef.current.setLngLat([location.lng, location.lat]);
     } else {
-      driverMarkerRef.current = new window.mapboxgl.Marker({ color: '#10b981' })
+      const el = document.createElement('div');
+      el.innerHTML = `
+        <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
+          <div style="
+            width:48px;height:48px;
+            background:linear-gradient(135deg,#10b981,#059669);
+            border-radius:50%;display:flex;align-items:center;justify-content:center;
+            box-shadow:0 0 0 5px rgba(16,185,129,0.25),0 4px 20px rgba(16,185,129,0.5);
+            border:3px solid #fff;font-size:22px;cursor:pointer;
+          ">🛵</div>
+          <div style="
+            margin-top:4px;background:#10b981;color:#fff;font-size:10px;font-weight:800;
+            padding:3px 8px;border-radius:10px;white-space:nowrap;
+            box-shadow:0 2px 8px rgba(0,0,0,0.2);
+          ">DRIVER</div>
+        </div>
+      `;
+      el.style.cursor = 'pointer';
+
+      driverMarkerRef.current = new window.mapboxgl.Marker({ element: el, anchor: 'bottom' })
         .setLngLat([location.lng, location.lat])
-        .setPopup(new window.mapboxgl.Popup().setHTML(`
-          <div style="padding: 8px;">
-            <strong style="color: #333;">🚗 Driver Location</strong><br/>
-            <span style="color: #666; font-size: 0.9rem;">On the way to you!</span>
-          </div>
-        `))
+        .setPopup(
+          new window.mapboxgl.Popup({ offset: 30, closeButton: false }).setHTML(`
+            <div style="
+              padding:14px 16px;background:#fff;border-radius:12px;
+              font-family:system-ui,sans-serif;min-width:190px;
+              box-shadow:0 8px 30px rgba(0,0,0,0.12);
+            ">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <div style="
+                  width:10px;height:10px;background:#10b981;border-radius:50%;
+                  box-shadow:0 0 0 3px rgba(16,185,129,0.25);
+                "></div>
+                <strong style="color:#111;font-size:13px;">Your Driver 🛵</strong>
+              </div>
+              <div style="color:#10b981;font-size:12px;font-weight:600;">On the way to you!</div>
+              <div style="color:#888;font-size:11px;margin-top:4px;">
+                Lat: ${location.lat.toFixed(5)}<br/>Lng: ${location.lng.toFixed(5)}
+              </div>
+            </div>
+          `)
+        )
         .addTo(mapInstanceRef.current);
     }
 
+    // Auto-fit both markers in view
     if (destinationMarkerRef.current) {
       const bounds = new window.mapboxgl.LngLatBounds();
       bounds.extend([location.lng, location.lat]);
       bounds.extend(destinationMarkerRef.current.getLngLat());
-      mapInstanceRef.current.fitBounds(bounds, { padding: 100 });
+      mapInstanceRef.current.fitBounds(bounds, { padding: 100, maxZoom: 16, duration: 1000 });
+    }
+
+    // Draw route from driver to customer
+    if (destinationMarkerRef.current) {
+      const destLngLat = destinationMarkerRef.current.getLngLat();
+      drawRoute(location, { lat: destLngLat.lat, lng: destLngLat.lng });
+    }
+  };
+
+  const drawRoute = async (driverLocation, customerLocation) => {
+    if (!mapInstanceRef.current) return;
+    const MAPBOX_TOKEN = 'pk.eyJ1IjoiY2hlZmRyZWR6IiwiYSI6ImNtaDRwY2JhZzFvYXFmMXNiOTVmYnQ5aHkifQ.wdXtoBRNl0xYhiPAZxDRjA';
+    try {
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLocation.lng},${driverLocation.lat};${customerLocation.lng},${customerLocation.lat}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!data.routes?.[0]) return;
+      const route = data.routes[0].geometry;
+
+      if (mapInstanceRef.current.getSource('route')) {
+        mapInstanceRef.current.getSource('route').setData({ type: 'Feature', geometry: route });
+      } else if (mapInstanceRef.current.isStyleLoaded()) {
+        mapInstanceRef.current.addSource('route', {
+          type: 'geojson',
+          data: { type: 'Feature', geometry: route },
+        });
+        mapInstanceRef.current.addLayer({
+          id: 'route',
+          type: 'line',
+          source: 'route',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': '#3b82f6',
+            'line-width': 6,
+            'line-opacity': 0.9,
+          },
+        });
+      }
+    } catch (err) {
+      console.error('Route error:', err);
     }
   };
 
   const openTracking = (order) => {
     setTrackingOrder(order);
     setDriverLocation(null);
+    driverTrailRef.current = [];
+    if (driverMarkerRef.current) { driverMarkerRef.current.remove(); driverMarkerRef.current = null; }
     setTimeout(() => initializeMap(order), 100);
 
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
@@ -383,6 +527,11 @@ const MyOrders = () => {
 
             {/* Map */}
             <div ref={mapRef} className="map-container" />
+            <style>{`
+              .mapboxgl-popup-content { padding:0!important;border-radius:12px!important;box-shadow:0 8px 30px rgba(0,0,0,0.15)!important;overflow:hidden; }
+              .mapboxgl-popup-tip { display:none!important; }
+              .mapboxgl-ctrl-logo { display:none!important; }
+            `}</style>
 
             {/* Footer Info */}
             <div className="modal-footer">
