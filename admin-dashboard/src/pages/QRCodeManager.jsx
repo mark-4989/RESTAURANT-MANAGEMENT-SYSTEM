@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import '../styles/qr-manager.css';
 
+const API_BASE_URL = 'https://restaurant-management-system-1-7v0m.onrender.com';
+
 const QRCodeManager = () => {
   const [startTable, setStartTable] = useState(1);
   const [endTable, setEndTable] = useState(10);
@@ -14,7 +16,7 @@ const QRCodeManager = () => {
     try {
       setLoading(true);
 
-      const response = await fetch('http://localhost:5000/api/qr-codes/generate-multiple', {
+      const response = await fetch(`${API_BASE_URL}/api/qr-codes/generate-multiple`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -40,7 +42,7 @@ const QRCodeManager = () => {
 
   const printQRCode = (tableNumber) => {
     const printWindow = window.open(
-      `http://localhost:5000/api/qr-codes/print/${tableNumber}`,
+      `${API_BASE_URL}/api/qr-codes/print/${tableNumber}`,
       '_blank'
     );
     if (printWindow) {
@@ -152,7 +154,7 @@ const QRCodeManager = () => {
                     size={200}
                     level="H"
                     includeMargin={true}
-                    fgColor="#667eea"
+                    fgColor="#4f7cac"
                   />
                 </div>
 
@@ -213,7 +215,7 @@ const QRCodeManager = () => {
                     size={400}
                     level="H"
                     includeMargin={true}
-                    fgColor="#667eea"
+                    fgColor="#4f7cac"
                   />
                 </div>
 
@@ -249,7 +251,7 @@ const QRCodeManager = () => {
           <li>Generate QR codes for your table range</li>
           <li>Print each QR code (full page or small sticker)</li>
           <li>Place QR codes on tables (laminated stand-up cards work best)</li>
-          <li>Customers scan with phone camera to view menu & order</li>
+          <li>Customers scan with phone camera to view menu &amp; order</li>
           <li>Orders automatically include table number</li>
         </ol>
 

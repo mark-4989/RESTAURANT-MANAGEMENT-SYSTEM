@@ -3,12 +3,13 @@
 .qr-manager-page {
   padding: 2rem;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--gradient-bg-primary, linear-gradient(135deg, #1a2942 0%, #2a4a7a 50%, #365a9e 100%));
 }
 
+/* ========== HEADER ========== */
 .qr-manager-header {
   text-align: center;
-  color: white;
+  color: var(--text-primary, #ffffff);
   margin-bottom: 2rem;
 }
 
@@ -16,26 +17,42 @@
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
+  background: var(--gradient-text-blue, linear-gradient(135deg, #7eb3e8 0%, #6b9bd8 50%, #5a8bc4 100%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .qr-manager-header p {
   font-size: 1.1rem;
+  color: var(--text-secondary, #bfdbfe);
   opacity: 0.9;
 }
 
-.glass-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
+/* ========== GLASS CARD OVERRIDE - BLUE THEME ========== */
+.qr-manager-page .glass-card {
+  background: var(--glass-bg, rgba(26, 41, 66, 0.6));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--radius-xl, 20px);
   padding: 2rem;
   margin-bottom: 2rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--glass-border, rgba(96, 165, 250, 0.2));
+  box-shadow: var(--shadow-md, 0 4px 16px rgba(26, 41, 66, 0.25));
+  /* NO hover transform */
 }
 
+.qr-manager-page .glass-card:hover {
+  transform: none;
+  box-shadow: var(--shadow-md, 0 4px 16px rgba(26, 41, 66, 0.25));
+}
+
+/* ========== GENERATOR SECTION ========== */
 .qr-generator-section h2 {
-  font-size: 1.8rem;
-  color: #333;
+  font-size: 1.6rem;
+  color: var(--text-primary, #ffffff);
   margin-bottom: 1.5rem;
+  font-weight: 700;
 }
 
 .generator-form {
@@ -53,43 +70,53 @@
 
 .form-group label {
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary, #bfdbfe);
   font-size: 0.95rem;
 }
 
 .form-input {
   padding: 0.75rem 1rem;
-  border: 2px solid rgba(102, 126, 234, 0.2);
-  border-radius: 10px;
+  background: var(--input-bg, rgba(219, 234, 254, 0.4));
+  border: 1px solid var(--input-border, rgba(79, 124, 172, 0.2));
+  border-radius: var(--radius-md, 12px);
   font-size: 1rem;
-  transition: all 0.3s ease;
+  color: var(--text-dark, #1f2937);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input:hover {
+  background: var(--input-bg, rgba(219, 234, 254, 0.4));
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  background: var(--input-bg-focus, rgba(219, 234, 254, 0.7));
+  border-color: var(--brand-primary, #4f7cac);
+  box-shadow: 0 0 0 3px rgba(79, 124, 172, 0.15);
 }
 
+/* ========== GENERATE BUTTON ========== */
 .generate-btn {
   padding: 0.75rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--gradient-primary, linear-gradient(135deg, #4f7cac 0%, #5a8bc4 100%));
+  color: var(--text-primary, #ffffff);
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-md, 12px);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   white-space: nowrap;
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(26, 41, 66, 0.2));
+  /* NO hover transform */
 }
 
 .generate-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  background: var(--gradient-primary, linear-gradient(135deg, #4f7cac 0%, #5a8bc4 100%));
+  opacity: 1;
+  transform: none;
 }
 
 .generate-btn:disabled {
@@ -97,6 +124,7 @@
   cursor: not-allowed;
 }
 
+/* ========== SPINNER ========== */
 .spinner-small {
   width: 16px;
   height: 16px;
@@ -110,42 +138,47 @@
   to { transform: rotate(360deg); }
 }
 
+/* ========== BULK ACTIONS ========== */
 .bulk-actions {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 2px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid var(--border-primary, rgba(96, 165, 250, 0.15));
   text-align: center;
 }
 
 .bulk-action-btn {
-  padding: 1rem 2rem;
-  background: #10b981;
-  color: white;
+  padding: 0.9rem 2rem;
+  background: var(--btn-success-bg, linear-gradient(135deg, #10b981 0%, #059669 100%));
+  color: var(--text-primary, #ffffff);
   border: none;
-  border-radius: 10px;
-  font-size: 1.1rem;
+  border-radius: var(--radius-md, 12px);
+  font-size: 1.05rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+  /* NO hover transform */
 }
 
 .bulk-action-btn:hover {
-  background: #059669;
-  transform: translateY(-2px);
+  background: var(--btn-success-bg, linear-gradient(135deg, #10b981 0%, #059669 100%));
+  transform: none;
+  opacity: 1;
 }
 
 .bulk-action-note {
   margin-top: 0.5rem;
   font-size: 0.9rem;
-  color: #666;
+  color: var(--text-tertiary, #93c5fd);
   font-style: italic;
 }
 
+/* ========== QR CODES SECTION ========== */
 .qr-codes-section h2 {
-  font-size: 1.8rem;
-  color: white;
+  font-size: 1.6rem;
+  color: var(--text-primary, #ffffff);
   margin-bottom: 1.5rem;
   text-align: center;
+  font-weight: 700;
 }
 
 .qr-codes-grid {
@@ -154,15 +187,16 @@
   gap: 1.5rem;
 }
 
+/* ========== QR CODE CARD ========== */
 .qr-code-card {
   padding: 1.5rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* NO transform on hover */
 }
 
 .qr-code-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  transform: none;
+  box-shadow: var(--shadow-md, 0 4px 16px rgba(26, 41, 66, 0.25));
 }
 
 .qr-code-header {
@@ -173,16 +207,17 @@
 }
 
 .qr-code-header h3 {
-  font-size: 1.3rem;
-  color: #333;
+  font-size: 1.2rem;
+  color: var(--text-primary, #ffffff);
   margin: 0;
+  font-weight: 700;
 }
 
 .table-badge {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, #4f7cac 0%, #5a8bc4 100%));
   color: white;
   padding: 0.25rem 0.75rem;
-  border-radius: 50px;
+  border-radius: var(--radius-full, 9999px);
   font-size: 0.85rem;
   font-weight: 700;
 }
@@ -192,11 +227,13 @@
   justify-content: center;
   align-items: center;
   padding: 1rem;
-  background: white;
-  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: var(--radius-lg, 16px);
   margin-bottom: 1rem;
+  border: 1px solid var(--glass-border, rgba(96, 165, 250, 0.2));
 }
 
+/* ========== QR ACTION BUTTONS ========== */
 .qr-code-actions {
   display: flex;
   gap: 0.75rem;
@@ -205,31 +242,36 @@
 
 .qr-action-btn {
   flex: 1;
-  padding: 0.75rem;
+  padding: 0.65rem;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-md, 12px);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  /* NO hover transform */
 }
 
 .qr-action-btn.print {
-  background: #3b82f6;
-  color: white;
+  background: var(--gradient-secondary, linear-gradient(135deg, #2a4a7a 0%, #4f7cac 100%));
+  color: var(--text-primary, #ffffff);
+  border: 1px solid var(--border-secondary, rgba(96, 165, 250, 0.2));
 }
 
 .qr-action-btn.print:hover {
-  background: #2563eb;
+  background: var(--gradient-secondary, linear-gradient(135deg, #2a4a7a 0%, #4f7cac 100%));
+  transform: none;
+  opacity: 1;
 }
 
 .qr-action-btn.download {
-  background: #10b981;
-  color: white;
+  background: var(--btn-success-bg, linear-gradient(135deg, #10b981 0%, #059669 100%));
+  color: var(--text-primary, #ffffff);
 }
 
 .qr-action-btn.download:hover {
-  background: #059669;
+  background: var(--btn-success-bg, linear-gradient(135deg, #10b981 0%, #059669 100%));
+  transform: none;
+  opacity: 1;
 }
 
 .qr-code-url {
@@ -238,11 +280,67 @@
 }
 
 .qr-code-url small {
-  color: #999;
+  color: var(--text-tertiary, #93c5fd);
   font-size: 0.75rem;
 }
 
-/* Modal Styles */
+/* ========== MODAL ========== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-heavy, rgba(15, 29, 46, 0.9));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal-backdrop, 1040);
+  backdrop-filter: blur(6px);
+}
+
+.modal-content {
+  background: var(--gradient-bg-card, linear-gradient(135deg, rgba(42, 74, 122, 0.95) 0%, rgba(54, 90, 158, 0.95) 100%));
+  border: 1px solid var(--glass-border, rgba(96, 165, 250, 0.2));
+  border-radius: var(--radius-xl, 20px);
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl, 0 12px 48px rgba(26, 41, 66, 0.35));
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border-primary, rgba(96, 165, 250, 0.15));
+}
+
+.modal-header h2 {
+  font-size: 1.4rem;
+  color: var(--text-primary, #ffffff);
+  font-weight: 700;
+}
+
+.close-btn {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full, 9999px);
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  transform: none;
+}
+
+/* ========== QR PREVIEW (MODAL BODY) ========== */
 .qr-modal .modal-body {
   padding: 2rem;
 }
@@ -252,16 +350,19 @@
 }
 
 .restaurant-name {
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: 700;
-  color: #667eea;
+  background: var(--gradient-text-blue, linear-gradient(135deg, #7eb3e8 0%, #6b9bd8 50%, #5a8bc4 100%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin-bottom: 0.5rem;
 }
 
 .table-number-large {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   font-weight: 700;
-  color: #333;
+  color: var(--text-primary, #ffffff);
   margin-bottom: 1.5rem;
 }
 
@@ -269,9 +370,10 @@
   display: flex;
   justify-content: center;
   padding: 2rem;
-  background: rgba(102, 126, 234, 0.05);
-  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: var(--radius-xl, 20px);
   margin-bottom: 1.5rem;
+  border: 1px solid var(--glass-border, rgba(96, 165, 250, 0.2));
 }
 
 .scan-instructions {
@@ -279,15 +381,16 @@
 }
 
 .scan-instructions p {
-  font-size: 1.1rem;
-  color: #666;
+  font-size: 1.05rem;
+  color: var(--text-secondary, #bfdbfe);
   margin-bottom: 0.5rem;
 }
 
 .scan-instructions strong {
-  color: #667eea;
+  color: var(--brand-light, #a5cef5);
 }
 
+/* ========== PREVIEW ACTION BUTTONS ========== */
 .preview-actions {
   display: flex;
   gap: 1rem;
@@ -295,40 +398,44 @@
 }
 
 .preview-btn {
-  padding: 1rem 2rem;
+  padding: 0.9rem 2rem;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-md, 12px);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* NO hover transform */
 }
 
 .preview-btn.print-full {
-  background: #3b82f6;
-  color: white;
+  background: var(--gradient-secondary, linear-gradient(135deg, #2a4a7a 0%, #4f7cac 100%));
+  color: var(--text-primary, #ffffff);
+  border: 1px solid var(--border-secondary, rgba(96, 165, 250, 0.2));
 }
 
 .preview-btn.print-full:hover {
-  background: #2563eb;
-  transform: translateY(-2px);
+  background: var(--gradient-secondary, linear-gradient(135deg, #2a4a7a 0%, #4f7cac 100%));
+  transform: none;
+  opacity: 1;
 }
 
 .preview-btn.download-full {
-  background: #10b981;
-  color: white;
+  background: var(--btn-success-bg, linear-gradient(135deg, #10b981 0%, #059669 100%));
+  color: var(--text-primary, #ffffff);
 }
 
 .preview-btn.download-full:hover {
-  background: #059669;
-  transform: translateY(-2px);
+  background: var(--btn-success-bg, linear-gradient(135deg, #10b981 0%, #059669 100%));
+  transform: none;
+  opacity: 1;
 }
 
-/* Instructions Section */
+/* ========== INSTRUCTIONS SECTION ========== */
 .qr-instructions h3 {
-  font-size: 1.5rem;
-  color: #333;
+  font-size: 1.4rem;
+  color: var(--text-primary, #ffffff);
   margin-bottom: 1rem;
+  font-weight: 700;
 }
 
 .qr-instructions ol {
@@ -338,22 +445,24 @@
 
 .qr-instructions li {
   margin-bottom: 0.75rem;
-  font-size: 1.05rem;
-  color: #666;
+  font-size: 1rem;
+  color: var(--text-secondary, #bfdbfe);
   line-height: 1.6;
 }
 
 .qr-tips {
-  background: rgba(102, 126, 234, 0.1);
+  background: rgba(79, 124, 172, 0.12);
   padding: 1.5rem;
-  border-radius: 15px;
+  border-radius: var(--radius-lg, 16px);
   margin-top: 1.5rem;
+  border: 1px solid var(--border-primary, rgba(96, 165, 250, 0.15));
 }
 
 .qr-tips h4 {
-  font-size: 1.2rem;
-  color: #667eea;
+  font-size: 1.1rem;
+  color: var(--brand-light, #a5cef5);
   margin-bottom: 1rem;
+  font-weight: 600;
 }
 
 .qr-tips ul {
@@ -363,11 +472,11 @@
 
 .qr-tips li {
   margin-bottom: 0.5rem;
-  font-size: 1rem;
-  color: #666;
+  font-size: 0.95rem;
+  color: var(--text-secondary, #bfdbfe);
 }
 
-/* Responsive */
+/* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
   .qr-manager-page {
     padding: 1rem;
@@ -391,7 +500,7 @@
 
   .qr-display-large svg {
     width: 100%;
-    max-width: 300px;
+    max-width: 280px;
     height: auto;
   }
 }
