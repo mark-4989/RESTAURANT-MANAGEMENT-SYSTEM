@@ -4,7 +4,7 @@ import { useUser } from '@clerk/clerk-react';
 import { MapPin, X, Navigation, Phone, Package, Clock, Radio, Truck } from 'lucide-react';
 import '../styles/MyOrders.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://restaurant-management-system-1-7v0m.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://restaurant-management-system-1-7v0m.onrender.com';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://restaurant-management-system-1-7v0m.onrender.com';
 
 const MyOrders = () => {
@@ -82,8 +82,15 @@ const MyOrders = () => {
 
   const fetchOrders = async () => {
     try {
+      // ← UPDATED: query by customerId (Clerk user ID) for accurate results.
+      // Falls back to customerName if customerId is not set on older orders.
+      const customerId   = user.id;
       const customerName = user.fullName || user.firstName || 'Guest';
-      const response = await fetch(`${API_URL}/orders?customerName=${encodeURIComponent(customerName)}`);
+
+      // Try customerId first — this is the reliable way going forward
+      const response = await fetch(
+        `${API_URL}/api/orders?customerId=${encodeURIComponent(customerId)}&customerName=${encodeURIComponent(customerName)}`
+      );
       const data = await response.json();
       
       if (data.success) {
@@ -312,30 +319,30 @@ const MyOrders = () => {
     }
   };
 
-  const dineInOrders = orders.filter(o => o.orderType === 'dine-in');
+  const dineInOrders   = orders.filter(o => o.orderType === 'dine-in');
   const deliveryOrders = orders.filter(o => o.orderType === 'delivery');
-  const pickupOrders = orders.filter(o => o.orderType === 'pickup');
-  const preOrders = orders.filter(o => o.orderType === 'preorder');
+  const pickupOrders   = orders.filter(o => o.orderType === 'pickup');
+  const preOrders      = orders.filter(o => o.orderType === 'preorder');
 
   const getCategoryOrders = () => {
     switch(selectedCategory) {
-      case 'dine-in': return dineInOrders;
+      case 'dine-in':  return dineInOrders;
       case 'delivery': return deliveryOrders;
-      case 'pickup': return pickupOrders;
+      case 'pickup':   return pickupOrders;
       case 'preorder': return preOrders;
-      default: return orders;
+      default:         return orders;
     }
   };
 
   const formatPrice = (price) => `KSh ${price?.toLocaleString() || 0}`;
-  const formatDate = (date) => new Date(date).toLocaleString();
+  const formatDate  = (date)  => new Date(date).toLocaleString();
 
   const getStatusColor = (status) => {
     const colors = {
-      pending: 'var(--status-pending)',
+      pending:   'var(--status-pending)',
       confirmed: 'var(--status-info)',
       preparing: '#8b5cf6',
-      ready: 'var(--status-ready)',
+      ready:     'var(--status-ready)',
       completed: 'var(--status-completed)',
       cancelled: 'var(--status-cancelled)'
     };
@@ -344,12 +351,12 @@ const MyOrders = () => {
 
   const getDeliveryStatusColor = (status) => {
     const colors = {
-      pending: 'var(--status-pending)',
-      assigned: 'var(--status-info)',
+      pending:    'var(--status-pending)',
+      assigned:   'var(--status-info)',
       'picked-up': '#8b5cf6',
       'on-the-way': 'var(--status-ready)',
-      delivered: '#22c55e',
-      cancelled: 'var(--status-cancelled)'
+      delivered:  '#22c55e',
+      cancelled:  'var(--status-cancelled)'
     };
     return colors[status] || 'var(--status-completed)';
   };
@@ -377,11 +384,11 @@ const MyOrders = () => {
         {/* Category Pills */}
         <div className="category-pills">
           {[
-            { id: 'all', label: 'All Orders', icon: '📋', count: orders.length },
-            { id: 'dine-in', label: 'Dine-In', icon: '🍽️', count: dineInOrders.length },
-            { id: 'delivery', label: 'Delivery', icon: '🚚', count: deliveryOrders.length },
-            { id: 'pickup', label: 'Pickup', icon: '🚗', count: pickupOrders.length },
-            { id: 'preorder', label: 'Pre-Orders', icon: '📅', count: preOrders.length }
+            { id: 'all',      label: 'All Orders', icon: '📋', count: orders.length },
+            { id: 'dine-in',  label: 'Dine-In',    icon: '🍽️', count: dineInOrders.length },
+            { id: 'delivery', label: 'Delivery',    icon: '🚚', count: deliveryOrders.length },
+            { id: 'pickup',   label: 'Pickup',      icon: '🚗', count: pickupOrders.length },
+            { id: 'preorder', label: 'Pre-Orders',  icon: '📅', count: preOrders.length }
           ].map(category => (
             <button
               key={category.id}
@@ -417,9 +424,9 @@ const MyOrders = () => {
                   <div>
                     <div className="order-number">{order.orderNumber}</div>
                     <div className={`order-type-badge ${order.orderType}`}>
-                      {order.orderType === 'dine-in' ? '🍽️' : 
+                      {order.orderType === 'dine-in'  ? '🍽️' : 
                        order.orderType === 'delivery' ? '🚚' : 
-                       order.orderType === 'pickup' ? '🚗' : '📅'} 
+                       order.orderType === 'pickup'   ? '🚗' : '📅'} 
                       {order.orderType.toUpperCase()}
                     </div>
                   </div>

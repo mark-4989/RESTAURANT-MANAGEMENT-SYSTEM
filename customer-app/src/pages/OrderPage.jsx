@@ -4,13 +4,16 @@ import { useUser } from '@clerk/clerk-react';
 import { toast } from 'react-toastify';
 import { Truck, Package, Calendar, Search, Phone, MapPin, Plus, Minus, Trash2, ShoppingCart, Navigation } from 'lucide-react';
 import { formatPrice } from '../data/menuData';
+import { useNotifications } from '../context/NotificationContext'; // ← NEW
 import '../styles/orderpage.css';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Fixed: removed trailing /api so it doesn't double up to /api/api/
+const API_URL = import.meta.env.VITE_API_URL || 'https://restaurant-management-system-1-7v0m.onrender.com';
 
 const OrderPage = () => {
   const { user } = useUser();
+  const { addNotification } = useNotifications(); // ← NEW
   const [orderType, setOrderType] = useState('pickup');
   const [menuItems, setMenuItems] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -57,7 +60,7 @@ const OrderPage = () => {
   const fetchMenu = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/menu`);
+      const response = await fetch(`${API_URL}/api/menu`);
       const data = await response.json();
       
       let items = [];
@@ -314,6 +317,7 @@ const OrderPage = () => {
     const orderData = {
       customerName: user?.fullName || 'Guest',
       customerEmail: user?.primaryEmailAddress?.emailAddress || '',
+      customerId: user?.id || null, // ← NEW: Clerk user ID for notifications
       items: cart.map(item => ({
         menuItem: item._id,
         name: item.name,
@@ -357,7 +361,7 @@ const OrderPage = () => {
     }
 
     try {
-      const response = await fetch(`${API_URL}/orders`, {
+      const response = await fetch(`${API_URL}/api/orders`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(orderData)
@@ -367,6 +371,18 @@ const OrderPage = () => {
 
       if (response.ok && data.success) {
         toast.success('🎉 Order placed successfully!');
+
+        // ← NEW: fire instant ORDER_PLACED notification on frontend
+        // The backend will also save it to DB and emit via socket,
+        // but this gives immediate feedback even before socket arrives
+        if (user?.id) {
+          addNotification('ORDER_PLACED', {
+            orderId:     data.data._id,
+            orderNumber: data.data.orderNumber,
+            message:     `Your order #${data.data.orderNumber} has been placed! We'll confirm it shortly.`,
+          });
+        }
+
         setCart([]);
         setOrderDetails({
           pickupDate: '', pickupTime: '', pickupPhone: '',
