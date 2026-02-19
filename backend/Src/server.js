@@ -78,6 +78,24 @@ initializeSocket(io);
 // Make io accessible to routes
 app.set('io', io);
 
+// ============================================
+// NOTIFICATION ROOMS  ← NEW
+// Each customer joins room  customer_<userId>
+// so the server can push updates to them individually.
+// ============================================
+io.on('connection', (socket) => {
+  socket.on('join_customer_room', ({ userId }) => {
+    if (userId) {
+      socket.join(`customer_${userId}`);
+      console.log(`📱 Customer joined notification room: customer_${userId}`);
+    }
+  });
+
+  socket.on('leave_customer_room', ({ userId }) => {
+    if (userId) socket.leave(`customer_${userId}`);
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 
 // ============================================
@@ -136,6 +154,7 @@ app.get('/', (req, res) => {
       deliveries: '/api/deliveries',
       reservations: '/api/reservations',
       preorders: '/api/preorders',
+      notifications: '/api/notifications', // ← NEW
       seed: '/api/menu/seed'
     }
   });
@@ -171,7 +190,8 @@ app.get('/api/health', (req, res) => {
       reservations: 'active',
       preorders: 'active',
       realTime: 'active',
-      liveTracking: 'active'
+      liveTracking: 'active',
+      notifications: 'active' // ← NEW
     }
   });
 });
@@ -201,25 +221,27 @@ connectDB();
 // ============================================
 // ROUTES
 // ============================================
-const menuRoutes = require('./routes/menuRoutes');
-const orderRoutes = require('./routes/orderRoutes');
-const receiptRoutes = require('./routes/receiptRoutes');
-const qrCodeRoutes = require('./routes/qrCodeRoutes');
-const staffRoutes = require('./routes/staffRoutes');
-const driverRoutes = require('./routes/driverRoutes');
-const deliveryRoutes = require('./routes/deliveryRoutes');
-const reservationRoutes = require('./routes/reservationRoutes');
-const preOrderRoutes = require('./routes/preOrderRoutes');
+const menuRoutes         = require('./routes/menuRoutes');
+const orderRoutes        = require('./routes/orderRoutes');
+const receiptRoutes      = require('./routes/receiptRoutes');
+const qrCodeRoutes       = require('./routes/qrCodeRoutes');
+const staffRoutes        = require('./routes/staffRoutes');
+const driverRoutes       = require('./routes/driverRoutes');
+const deliveryRoutes     = require('./routes/deliveryRoutes');
+const reservationRoutes  = require('./routes/reservationRoutes');
+const preOrderRoutes     = require('./routes/preOrderRoutes');
+const notificationRoutes = require('./routes/notificationRoutes'); // ← NEW
 
-app.use('/api/menu', menuRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/receipts', receiptRoutes);
-app.use('/api/qr-codes', qrCodeRoutes);
-app.use('/api/staff', staffRoutes);
-app.use('/api/drivers', driverRoutes);
-app.use('/api/deliveries', deliveryRoutes);
-app.use('/api/reservations', reservationRoutes);
-app.use('/api/preorders', preOrderRoutes);
+app.use('/api/menu',          menuRoutes);
+app.use('/api/orders',        orderRoutes);
+app.use('/api/receipts',      receiptRoutes);
+app.use('/api/qr-codes',      qrCodeRoutes);
+app.use('/api/staff',         staffRoutes);
+app.use('/api/drivers',       driverRoutes);
+app.use('/api/deliveries',    deliveryRoutes);
+app.use('/api/reservations',  reservationRoutes);
+app.use('/api/preorders',     preOrderRoutes);
+app.use('/api/notifications', notificationRoutes); // ← NEW
 
 // ============================================
 // ERROR HANDLING MIDDLEWARE
@@ -262,6 +284,7 @@ server.listen(PORT, '0.0.0.0', () => {
   ║   • Deliveries: /api/deliveries
   ║   • Reservations: /api/reservations
   ║   • Pre-Orders: /api/preorders
+  ║   • Notifications: /api/notifications  🔔 NEW
   ╠═══════════════════════════════════════╣
   ║   🔌 WebSockets: ENABLED
   ║   📄 PDF Receipts: ENABLED
@@ -273,6 +296,7 @@ server.listen(PORT, '0.0.0.0', () => {
   ║   📅 Pre-Orders: ENABLED
   ║   📍 Live Tracking: ENABLED
   ║   🔔 Real-time Updates: ENABLED
+  ║   🔔 Notifications: ENABLED  ← NEW
   ╚═══════════════════════════════════════╝
   `);
 });
