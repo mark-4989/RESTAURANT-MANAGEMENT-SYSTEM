@@ -10,6 +10,7 @@ const {
   getOrderStats,
 } = require('../controllers/orderController');
 
+// Notification helpers
 const {
   createAndEmitNotification,
   STATUS_TO_TYPE,
@@ -23,10 +24,14 @@ router.get('/:id',     getOrder);
 router.delete('/:id',  deleteOrder);
 
 // ── POST / — create order ─────────────────────────────────────────────────────
+// Wraps the original createOrder controller, then fires ORDER_PLACED notification
 router.post('/', async (req, res, next) => {
   const originalJson = res.json.bind(res);
+  let intercepted = false;
 
   res.json = (body) => {
+    intercepted = true;
+
     if (body?.success && body?.data?._id) {
       const order       = body.data;
       const recipientId = order.customerId;
@@ -45,6 +50,7 @@ router.post('/', async (req, res, next) => {
         console.log('[Notif] ORDER_PLACED skipped — no customerId on order:', order.orderNumber);
       }
     }
+
     return originalJson(body);
   };
 
@@ -52,11 +58,13 @@ router.post('/', async (req, res, next) => {
 });
 
 // ── PATCH /:id/status — update status ────────────────────────────────────────
+// Wraps the original updateOrderStatus controller, then fires status notification
 router.patch('/:id/status', async (req, res, next) => {
   const Order = require('../models/Order');
-  let previousStatus = null;
-  let cachedOrderType = null;
 
+  // Read the order BEFORE the controller changes it so we know previousStatus
+  let previousStatus  = null;
+  let cachedOrderType = null;
   try {
     const existing = await Order.findById(req.params.id).select('status customerId orderNumber orderType');
     if (existing) {
@@ -90,10 +98,16 @@ router.patch('/:id/status', async (req, res, next) => {
 
           console.log(`[Notif] ✅ Sent ${notifType} to customer_${recipientId} (${orderType})`);
         } else {
-          console.log('[Notif] Skipped — no notifType or no recipientId:', { newStatus, notifType, recipientId });
+          console.log('[Notif] Skipped status notification:', {
+            newStatus,
+            notifType,
+            recipientId,
+            hasMessage: !!getMessage,
+          });
         }
       }
     }
+
     return originalJson(body);
   };
 
@@ -105,7 +119,7 @@ router.put('/:id/assign-driver', async (req, res) => {
   try {
     const Order = require('../models/Order');
     const { driverId, deliveryStatus, driverName, driverPhone } = req.body;
-
+    
     const updateData = { updatedAt: new Date() };
 
     if (driverId) {
@@ -122,29 +136,32 @@ router.put('/:id/assign-driver', async (req, res) => {
       }
     }
 
-    const order = await Order.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
 
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    // Notify customer on key delivery milestones
+    // Notify customer when driver is assigned, on the way, or delivered
     if (deliveryStatus && order.customerId) {
       const notifMap = {
+        'assigned': {
+          type: 'ON_THE_WAY',
+          msg:  `A driver has been assigned to your order #${order.orderNumber} and will pick it up shortly. 🚗`,
+        },
         'on-the-way': {
           type: 'ON_THE_WAY',
           msg:  `Your order #${order.orderNumber} is on its way — the driver is heading to you now! 🚚 Track it live on the app.`,
         },
         'delivered': {
           type: 'DELIVERED',
-          msg:  `Your order #${order.orderNumber} has arrived! Enjoy every bite. Bon appétit! 🏠❤️`,
-        },
-        'assigned': {
-          type: 'ON_THE_WAY',
-          msg:  `A driver has been assigned to your order #${order.orderNumber} and will pick it up shortly. 🚗`,
+          msg:  `Your order #${order.orderNumber} has arrived! We hope you enjoy every bite. Bon appétit! 🏠❤️`,
         },
       };
-
       const notif = notifMap[deliveryStatus];
       if (notif) {
         const io = req.app.get('io');
@@ -174,7 +191,7 @@ router.put('/:id/assign-driver', async (req, res) => {
 router.post('/:id/broadcast', async (req, res) => {
   try {
     const Order = require('../models/Order');
-
+    
     const order = await Order.findByIdAndUpdate(
       req.params.id,
       { broadcast: true, deliveryStatus: 'pending', updatedAt: new Date() },
@@ -185,18 +202,10 @@ router.post('/:id/broadcast', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    // Notify customer that we're looking for a driver
-    if (order.customerId) {
-      const io = req.app.get('io');
-      createAndEmitNotification(io, {
-        userId:      order.customerId,
-        type:        'ORDER_CONFIRMED',
-        orderId:     order._id,
-        orderNumber: order.orderNumber,
-        orderType:   order.orderType,
-        message:     `We're finding the best driver for your order #${order.orderNumber}. Hang tight! 🚗`,
-      }).catch(() => {});
-    }
+    // TODO: Emit WebSocket event to all drivers
+    // if (req.app.get('io')) {
+    //   req.app.get('io').emit('order:broadcast', order);
+    // }
 
     res.json({ success: true, message: 'Order broadcasted to all drivers', data: order });
   } catch (error) {
@@ -210,7 +219,7 @@ router.patch('/:id/update-location', async (req, res) => {
   try {
     const Order = require('../models/Order');
     const { lat, lng } = req.body;
-
+    
     const order = await Order.findByIdAndUpdate(
       req.params.id,
       { 'driver.currentLocation': { lat, lng }, updatedAt: new Date() },
