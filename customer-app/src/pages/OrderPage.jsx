@@ -1,20 +1,70 @@
 // customer-app/src/pages/OrderPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '@clerk/clerk-react';
-import { toast } from 'react-toastify';
 import { Truck, Package, Calendar, Search, Phone, MapPin, Plus, Minus, Trash2, ShoppingCart, Navigation } from 'lucide-react';
 import { formatPrice } from '../data/menuData';
-import { useNotifications } from '../context/NotificationContext'; // ← NEW
+import { useNotifications } from '../context/NotificationContext';
 import '../styles/orderpage.css';
 
+// ── Lightweight in-page toast (replaces react-toastify) ─────────────────────
+// Used for cart feedback & validation. Order-event toasts come from NotificationContext.
+let _showSimpleToast = null;
+
+const SimpleToast = () => {
+  const [items, setItems] = useState([]);
+  const timers = useRef({});
+
+  useEffect(() => {
+    _showSimpleToast = (message, type = 'info') => {
+      const id = `st_${Date.now()}_${Math.random()}`;
+      setItems(prev => [...prev, { id, message, type }]);
+      timers.current[id] = setTimeout(() => {
+        setItems(prev => prev.filter(i => i.id !== id));
+        delete timers.current[id];
+      }, 3000);
+    };
+    return () => {
+      _showSimpleToast = null;
+      Object.values(timers.current).forEach(clearTimeout);
+    };
+  }, []);
+
+  const colors = { success: '#10b981', error: '#ef4444', info: '#3b82f6', warning: '#f59e0b' };
+  if (items.length === 0) return null;
+
+  return (
+    <div style={{ position: 'fixed', bottom: '5.5rem', left: '50%', transform: 'translateX(-50%)', zIndex: 8888, display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', pointerEvents: 'none' }}>
+      {items.map(item => (
+        <div key={item.id} style={{
+          background: colors[item.type] || colors.info,
+          color: '#fff',
+          padding: '10px 22px',
+          borderRadius: '100px',
+          fontSize: '0.875rem',
+          fontWeight: 600,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+          whiteSpace: 'nowrap',
+          animation: 'st-fadeup 0.25s ease',
+        }}>
+          {item.message}
+        </div>
+      ))}
+      <style>{`@keyframes st-fadeup { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }`}</style>
+    </div>
+  );
+};
+
+const showToast = (message, type = 'info') => {
+  if (_showSimpleToast) _showSimpleToast(message, type);
+};
+
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
-// Fixed: removed trailing /api so it doesn't double up to /api/api/
-// Strip trailing /api if Vercel env var includes it — prevents /api/api/ double-prefix
+// Strip trailing /api — prevents /api/api/ double-prefix when Vercel env includes it
 const API_URL = (import.meta.env.VITE_API_URL || 'https://restaurant-management-system-1-7v0m.onrender.com').replace(/\/api\/?$/, '');
 
 const OrderPage = () => {
   const { user } = useUser();
-  const { addNotification } = useNotifications(); // ← NEW
+  const { addNotification } = useNotifications();
   const [orderType, setOrderType] = useState('pickup');
   const [menuItems, setMenuItems] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -75,7 +125,7 @@ const OrderPage = () => {
       setCategories(cats);
       setLoading(false);
     } catch (error) {
-      toast.error('Failed to load menu');
+      showToast('Failed to load menu', 'error');
       setLoading(false);
     }
   };
@@ -170,7 +220,7 @@ const OrderPage = () => {
               deliveryLng: lng
             }));
 
-            toast.success('📍 Delivery location set!');
+            showToast('📍 Delivery location set!', 'success');
           })
           .catch(err => {
             console.error('Geocoding error:', err);
@@ -180,7 +230,7 @@ const OrderPage = () => {
               deliveryLat: lat,
               deliveryLng: lng
             }));
-            toast.success('📍 Delivery location set!');
+            showToast('📍 Delivery location set!', 'success');
           });
       });
 
@@ -206,7 +256,7 @@ const OrderPage = () => {
 
   const useCurrentLocation = () => {
     if (!navigator.geolocation) {
-      toast.error('Geolocation is not supported by your browser');
+      showToast('Geolocation is not supported by your browser', 'error');
       return;
     }
 
@@ -241,12 +291,12 @@ const OrderPage = () => {
                 deliveryLng: longitude
               }));
 
-              toast.success('📍 Current location set!');
+              showToast('📍 Current location set!', 'success');
             });
         }
       },
       (error) => {
-        toast.error('Could not get your location. Please click on the map to set delivery location.');
+        showToast('Could not get your location. Please click on the map to set delivery location.', 'error');
       }
     );
   };
@@ -257,16 +307,16 @@ const OrderPage = () => {
       setCart(cart.map(i => 
         i._id === item._id ? {...i, quantity: i.quantity + 1} : i
       ));
-      toast.success(`Added another ${item.name}!`);
+      showToast(`+1 ${item.name} added!`, 'success');
     } else {
       setCart([...cart, {...item, quantity: 1}]);
-      toast.success(`${item.name} added to cart!`);
+      showToast(`${item.name} added to cart!`, 'success');
     }
   };
 
   const removeFromCart = (itemId) => {
     setCart(cart.filter(i => i._id !== itemId));
-    toast.info('Item removed');
+    showToast('Item removed', 'info');
   };
 
   const updateQuantity = (itemId, change) => {
@@ -286,31 +336,31 @@ const OrderPage = () => {
 
   const placeOrder = async () => {
     if (cart.length === 0) {
-      toast.error('⚠️ Please add items to your cart');
+      showToast('⚠️ Please add items to your cart', 'warning');
       return;
     }
 
     if (orderType === 'pickup') {
       if (!orderDetails.pickupDate || !orderDetails.pickupTime || !orderDetails.pickupPhone) {
-        toast.error('⚠️ Please fill in all pickup details');
+        showToast('⚠️ Please fill in all pickup details', 'warning');
         return;
       }
     }
 
     if (orderType === 'delivery') {
       if (!orderDetails.deliveryAddress || !orderDetails.deliveryPhone || !orderDetails.deliveryLat || !orderDetails.deliveryLng) {
-        toast.error('⚠️ Please set delivery location on the map and provide phone number');
+        showToast('⚠️ Please set delivery location on the map and provide phone number', 'warning');
         return;
       }
       if (!orderDetails.deliveryDate || !orderDetails.deliveryTime) {
-        toast.error('⚠️ Please select delivery date and time');
+        showToast('⚠️ Please select delivery date and time', 'warning');
         return;
       }
     }
 
     if (orderType === 'preorder') {
       if (!orderDetails.preorderDate || !orderDetails.preorderTime) {
-        toast.error('⚠️ Please select pre-order date and time');
+        showToast('⚠️ Please select pre-order date and time', 'warning');
         return;
       }
     }
@@ -371,18 +421,16 @@ const OrderPage = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        toast.success('🎉 Order placed successfully!');
-
-        // ← NEW: fire instant ORDER_PLACED notification on frontend
-        // The backend will also save it to DB and emit via socket,
-        // but this gives immediate feedback even before socket arrives
+        // ── Immediate in-app notification (before socket round-trip) ──────────
         if (user?.id) {
           addNotification('ORDER_PLACED', {
             orderId:     data.data._id,
             orderNumber: data.data.orderNumber,
-            message:     `Your order #${data.data.orderNumber} has been placed! We'll confirm it shortly.`,
+            orderType,   // so the message says "your delivery order" vs "your pickup order"
           });
         }
+
+        showToast(`🎉 Order #${data.data.orderNumber} placed!`, 'success');
 
         setCart([]);
         setOrderDetails({
@@ -393,13 +441,12 @@ const OrderPage = () => {
           tableNumber: '', specialInstructions: ''
         });
         if (marker.current) marker.current.remove();
-        toast.info(`Order Number: ${data.data.orderNumber}`);
       } else {
-        toast.error(`❌ ${data.message || 'Failed to place order'}`);
+        showToast(`❌ ${data.message || 'Failed to place order'}`, 'error');
       }
     } catch (error) {
       console.error('Order error:', error);
-      toast.error('❌ Failed to place order');
+      showToast('❌ Failed to place order. Please try again.', 'error');
     }
   };
 
@@ -448,6 +495,7 @@ const OrderPage = () => {
 
   return (
     <div className="order-page">
+      <SimpleToast />
       <div style={{maxWidth: '1600px', margin: '0 auto'}}>
         
         <div style={{textAlign: 'center', color: 'var(--text-primary)', marginBottom: '3rem'}}>

@@ -4,21 +4,55 @@ import { io } from 'socket.io-client';
 
 const NotificationContext = createContext(null);
 
-// Strip trailing /api if Vercel env var includes it — prevents /api/api/ double-prefix
+// Strip trailing /api — prevents /api/api/ double-prefix
 const API_URL = (import.meta.env.VITE_API_URL || 'https://restaurant-management-system-1-7v0m.onrender.com').replace(/\/api\/?$/, '');
 
 export const NOTIFICATION_TYPES = {
-  ORDER_PLACED:    { label: 'Order Placed',      emoji: '🧾', color: '#3b82f6' },
-  ORDER_CONFIRMED: { label: 'Order Confirmed',   emoji: '✅', color: '#10b981' },
-  PREPARING:       { label: 'Being Prepared',    emoji: '🔥', color: '#f59e0b' },
-  READY:           { label: 'Ready!',            emoji: '🍽️', color: '#8b5cf6' },
-  ON_THE_WAY:      { label: 'On the Way',        emoji: '🚚', color: '#06b6d4' },
-  DELIVERED:       { label: 'Delivered',         emoji: '🏠', color: '#10b981' },
-  PAYMENT_SUCCESS: { label: 'Payment Confirmed', emoji: '💳', color: '#10b981' },
-  PAYMENT_FAILED:  { label: 'Payment Failed',    emoji: '❌', color: '#ef4444' },
-  CANCELLED:       { label: 'Order Cancelled',   emoji: '🚫', color: '#ef4444' },
-  CHEF_MESSAGE:    { label: 'Message from Chef', emoji: '👨‍🍳', color: '#dc2626' },
-  PROMO:           { label: 'Special Offer',     emoji: '🎉', color: '#f59e0b' },
+  ORDER_PLACED:    { label: 'Order Placed',        emoji: '🧾', color: '#3b82f6' },
+  ORDER_CONFIRMED: { label: 'Order Confirmed',     emoji: '✅', color: '#10b981' },
+  PREPARING:       { label: 'Being Prepared',      emoji: '🔥', color: '#f59e0b' },
+  READY:           { label: 'Ready to Collect!',   emoji: '🍽️', color: '#8b5cf6' },
+  ON_THE_WAY:      { label: 'On the Way',          emoji: '🚚', color: '#06b6d4' },
+  DELIVERED:       { label: 'Delivered',           emoji: '🏠', color: '#10b981' },
+  PAYMENT_SUCCESS: { label: 'Payment Confirmed',   emoji: '💳', color: '#10b981' },
+  PAYMENT_FAILED:  { label: 'Payment Failed',      emoji: '❌', color: '#ef4444' },
+  CANCELLED:       { label: 'Order Cancelled',     emoji: '🚫', color: '#ef4444' },
+  CHEF_MESSAGE:    { label: 'Message from Chef',   emoji: '👨‍🍳', color: '#dc2626' },
+  PROMO:           { label: 'Special Offer',       emoji: '🎉', color: '#f59e0b' },
+};
+
+// Warm, friendly messages per order type and status
+export const getNotificationMessage = (type, orderNumber, orderType = 'pickup') => {
+  const typeLabel = orderType === 'delivery' ? 'delivery' : orderType === 'dine-in' ? 'dine-in order' : 'pickup order';
+  const messages = {
+    ORDER_PLACED: {
+      delivery: `Your delivery order #${orderNumber} is confirmed! 🎉 We're getting everything ready for you.`,
+      pickup:    `Your pickup order #${orderNumber} is in! 🎉 We'll let you know the moment it's ready.`,
+      'dine-in': `Welcome! Your dine-in order #${orderNumber} has been placed. Sit back and relax!`,
+      preorder:  `Your pre-order #${orderNumber} is booked! We'll have everything perfect for you. 🍽️`,
+      default:   `Your order #${orderNumber} has been placed! We're on it. 🧾`,
+    },
+    ORDER_CONFIRMED: `Great news! Your order #${orderNumber} has been confirmed and sent to the kitchen. 🙌`,
+    PREPARING:       `Our chef is now preparing your order #${orderNumber} with love and care. 🔥 Smells amazing already!`,
+    READY: {
+      delivery: `Your order #${orderNumber} is packed and ready — the driver will pick it up shortly! 🚚`,
+      pickup:   `Your order #${orderNumber} is ready for pickup! Come grab it while it's hot. 🍽️`,
+      'dine-in': `Your order #${orderNumber} is on its way to your table! Enjoy your meal. 🍽️`,
+      default:  `Your order #${orderNumber} is ready! 🍽️`,
+    },
+    ON_THE_WAY:      `Your order #${orderNumber} is on the way — the driver is heading to you now. 🚚 Track it live!`,
+    DELIVERED:       `Your order #${orderNumber} has arrived! We hope you enjoy every bite. Bon appétit! 🏠❤️`,
+    PAYMENT_SUCCESS: `Payment for order #${orderNumber} was successful. Thank you for dining with us! 💳`,
+    PAYMENT_FAILED:  `Payment for order #${orderNumber} could not be processed. Please try again or contact support.`,
+    CANCELLED:       `Your order #${orderNumber} has been cancelled. If you need help, we're here for you.`,
+    CHEF_MESSAGE:    `The chef has sent you a message about order #${orderNumber}. 👨‍🍳`,
+    PROMO:           `You have a special offer waiting for you! 🎉`,
+  };
+
+  const entry = messages[type];
+  if (!entry) return `Update on your order #${orderNumber}`;
+  if (typeof entry === 'string') return entry;
+  return entry[orderType] || entry.default || entry.delivery || Object.values(entry)[0];
 };
 
 export const NotificationProvider = ({ children, userId }) => {
@@ -27,36 +61,24 @@ export const NotificationProvider = ({ children, userId }) => {
   const [loading, setLoading]             = useState(true);
   const socketRef      = useRef(null);
   const toastTimersRef = useRef({});
+  const toastCountRef  = useRef(0);
 
-  // Debug: log which API URL is being used so you can confirm in browser console
-  useEffect(() => {
-    console.log('🔔 NotificationContext using API_URL:', API_URL);
-    console.log('🔔 userId:', userId);
-  }, [userId]);
-
-  // ── Load existing notifications from DB ───────────────────────────────────
+  // ── Load existing notifications from DB ─────────────────────────────────────
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
 
-    console.log('📥 Fetching notifications for user:', userId);
     fetch(`${API_URL}/api/notifications/${userId}`)
-      .then(r => {
-        console.log('📥 Notifications fetch status:', r.status);
-        return r.ok ? r.json() : Promise.reject(r.status);
-      })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(({ data }) => {
-        console.log('📥 Notifications received:', data?.length || 0);
         if (Array.isArray(data)) setNotifications(data);
       })
-      .catch((err) => console.error('📥 Notifications fetch failed:', err))
+      .catch(err => console.error('Notifications fetch failed:', err))
       .finally(() => setLoading(false));
   }, [userId]);
 
-  // ── Socket.IO: join room, listen for real-time pushes ────────────────────
+  // ── Socket.IO: real-time pushes ──────────────────────────────────────────────
   useEffect(() => {
     if (!userId) return;
-
-    console.log('🔌 Connecting notification socket to:', API_URL);
 
     const socket = io(API_URL, {
       transports: ['websocket', 'polling'],
@@ -66,30 +88,26 @@ export const NotificationProvider = ({ children, userId }) => {
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('✅ Notification socket connected, joining room: customer_' + userId);
       socket.emit('join_customer_room', { userId });
     });
 
-    socket.on('connect_error', (err) => {
-      console.error('❌ Socket connection error:', err.message);
-    });
-
-    // Server pushes this when an order status changes
     socket.on('new_notification', (notif) => {
-      console.log('🔔 New notification received:', notif);
       const meta     = NOTIFICATION_TYPES[notif.type] || {};
       const enriched = {
         ...notif,
         emoji: notif.emoji || meta.emoji,
         color: notif.color || meta.color,
+        label: notif.label || meta.label,
       };
-      setNotifications(prev => [enriched, ...prev]);
+      setNotifications(prev => {
+        // Deduplicate: skip if same _id already exists
+        if (prev.some(n => n._id === enriched._id)) return prev;
+        return [enriched, ...prev];
+      });
       pushToast(enriched);
     });
 
-    socket.on('disconnect', (reason) => {
-      console.log('🔕 Notification socket disconnected:', reason);
-    });
+    socket.on('connect_error', err => console.error('Socket error:', err.message));
 
     return () => {
       socket.emit('leave_customer_room', { userId });
@@ -98,15 +116,16 @@ export const NotificationProvider = ({ children, userId }) => {
     };
   }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Toast helpers ─────────────────────────────────────────────────────────
+  // ── Toast helpers ────────────────────────────────────────────────────────────
   const pushToast = useCallback((notif) => {
-    const toastId = notif._id || `toast_${Date.now()}`;
+    toastCountRef.current += 1;
+    const toastId = `toast_${Date.now()}_${toastCountRef.current}`;
     setToasts(prev => [...prev, { ...notif, toastId }]);
 
     const timer = setTimeout(() => {
       setToasts(prev => prev.filter(t => t.toastId !== toastId));
       delete toastTimersRef.current[toastId];
-    }, 5000);
+    }, 5500);
     toastTimersRef.current[toastId] = timer;
   }, []);
 
@@ -116,19 +135,20 @@ export const NotificationProvider = ({ children, userId }) => {
     setToasts(prev => prev.filter(t => t.toastId !== toastId));
   }, []);
 
-  // ── Optimistic local notification (called right when order is placed) ─────
-  const addNotification = useCallback((type, { orderId, orderNumber, message, extra = {} }) => {
+  // ── Optimistic local notification (called right when order is placed) ────────
+  const addNotification = useCallback((type, { orderId, orderNumber, message, orderType, extra = {} }) => {
     const meta  = NOTIFICATION_TYPES[type] || {};
     const notif = {
       _id: `local_${Date.now()}`,
       type,
       orderId,
       orderNumber,
-      title: meta.label,
-      message,
-      emoji: meta.emoji,
-      color: meta.color,
-      read: false,
+      title:   meta.label,
+      label:   meta.label,
+      message: message || getNotificationMessage(type, orderNumber, orderType),
+      emoji:   meta.emoji,
+      color:   meta.color,
+      read:    false,
       createdAt: new Date().toISOString(),
       ...extra,
     };
@@ -137,10 +157,12 @@ export const NotificationProvider = ({ children, userId }) => {
     return notif;
   }, [pushToast]);
 
-  // ── Read actions ──────────────────────────────────────────────────────────
+  // ── Read actions ─────────────────────────────────────────────────────────────
   const markAsRead = useCallback(async (notifId) => {
     setNotifications(prev => prev.map(n => n._id === notifId ? { ...n, read: true } : n));
-    fetch(`${API_URL}/api/notifications/${notifId}/read`, { method: 'PATCH' }).catch(() => {});
+    if (!notifId.startsWith('local_')) {
+      fetch(`${API_URL}/api/notifications/${notifId}/read`, { method: 'PATCH' }).catch(() => {});
+    }
   }, []);
 
   const markAllAsRead = useCallback(async () => {
