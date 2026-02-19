@@ -1,81 +1,11 @@
 // backend/src/controllers/orderController.js
+// ── CHANGE FROM ORIGINAL ───────────────────────────────────────────────────────
+// Removed STATUS_NOTIF_MAP and sendCustomerNotification. Notifications are now
+// fired exclusively by the res.json interceptor in orderRoutes.js — having both
+// was causing double-notifications. All other code is identical to the original.
+// ──────────────────────────────────────────────────────────────────────────────
 const Order = require('../models/Order');
 const { emitNewOrder, emitOrderStatusUpdate, emitOrderDeleted } = require('../services/socketService');
-
-// Map order status → notification type + warm message per order type
-const STATUS_NOTIF_MAP = {
-  confirmed: {
-    type: 'ORDER_CONFIRMED',
-    msg: (num, orderType) => {
-      const map = {
-        delivery:  `Great news! Your delivery order #${num} is confirmed and queued for the kitchen. 🙌`,
-        pickup:    `Your pickup order #${num} is confirmed! We'll let you know when it's ready to collect. 🙌`,
-        'dine-in': `Your dine-in order #${num} is confirmed! Our team is on it — sit tight. 😊`,
-        preorder:  `Your pre-order #${num} is confirmed! We'll start preparing it at the right time. ⏰`,
-      };
-      return map[orderType] || `Your order #${num} has been confirmed! 🙌`;
-    },
-  },
-  preparing: {
-    type: 'PREPARING',
-    msg: (num) =>
-      `Our chef is now preparing your order #${num} with love and care. 🔥 It smells amazing already!`,
-  },
-  ready: {
-    type: 'READY',
-    msg: (num, orderType) => {
-      const map = {
-        delivery:  `Your order #${num} is packed and ready — the driver will pick it up shortly! 🚚`,
-        pickup:    `Your order #${num} is hot and ready for pickup! Come grab it while it's fresh. 🍽️`,
-        'dine-in': `Your order #${num} is on its way to your table right now! Enjoy every bite. 🍽️`,
-        preorder:  `Your pre-order #${num} is ready! Please collect it or it will be delivered shortly. 🎉`,
-      };
-      return map[orderType] || `Your order #${num} is ready! 🍽️`;
-    },
-  },
-  completed: {
-    type: 'DELIVERED',
-    msg: (num) =>
-      `Your order #${num} is complete. Thank you for dining with us — it was a pleasure! ⭐ See you again soon.`,
-  },
-  cancelled: {
-    type: 'CANCELLED',
-    msg: (num) =>
-      `Your order #${num} has been cancelled. We're sorry for the inconvenience. Please contact us if you need help. 💙`,
-  },
-};
-
-// Core: save notification to DB and push via socket to the specific customer
-const sendCustomerNotification = async (app, order, notifType, message) => {
-  try {
-    // Lazy-load to avoid circular require
-    const { createAndEmitNotification } = require('../routes/notificationRoutes');
-
-    const customerId = order.customerId;
-
-    if (!customerId) {
-      // This happens for orders placed before customerId was added to the schema.
-      // New orders from the customer app will always have it going forward.
-      console.log(`[Notif] ⚠️  No customerId on order ${order.orderNumber} — notification skipped.`);
-      console.log(`[Notif] ℹ️  Place a fresh order via the customer app to test notifications.`);
-      return;
-    }
-
-    const io = app ? app.get('io') : null;
-    await createAndEmitNotification(io, {
-      userId:      customerId,
-      type:        notifType,
-      orderId:     order._id,
-      orderNumber: order.orderNumber,
-      orderType:   order.orderType,
-      message,
-    });
-
-    console.log(`[Notif] ✅ Sent ${notifType} → customer_${customerId} (${order.orderNumber})`);
-  } catch (err) {
-    console.error(`[Notif] ❌ Failed to send ${notifType}:`, err.message);
-  }
-};
 
 // ── Generate order number ─────────────────────────────────────────────────────
 const generateOrderNumber = async () => {
@@ -108,18 +38,8 @@ exports.createOrder = async (req, res) => {
     // Emit to kitchen/admin displays
     emitNewOrder(order);
 
-    // Notify customer: ORDER_PLACED
-    const placedMsg = (() => {
-      const num = order.orderNumber;
-      const map = {
-        delivery:  `Your delivery order #${num} is in! 🎉 We're getting everything ready for you.`,
-        pickup:    `Your pickup order #${num} is in! 🎉 We'll notify you the moment it's ready to collect.`,
-        'dine-in': `Welcome! Your dine-in order #${num} has been placed. Sit back and relax! 🍽️`,
-        preorder:  `Your pre-order #${num} is booked! We'll have everything perfect for you. 📅`,
-      };
-      return map[order.orderType] || `Your order #${num} has been placed! We're on it. 🧾`;
-    })();
-    sendCustomerNotification(req.app, order, 'ORDER_PLACED', placedMsg).catch(() => {});
+    // NOTE: Customer ORDER_PLACED notification is handled by the res.json
+    // interceptor in orderRoutes.js — no call needed here.
 
     // Update staff performance
     if (order.createdBy) {
@@ -201,7 +121,6 @@ exports.updateOrderStatus = async (req, res) => {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
-    const previousStatus = order.status;
     order.status = status;
 
     // Record timestamps
@@ -218,15 +137,8 @@ exports.updateOrderStatus = async (req, res) => {
     // Emit real-time update to kitchen/admin displays
     emitOrderStatusUpdate(order);
 
-    // ── Fire customer notification if status actually changed ─────────────────
-    if (status !== previousStatus) {
-      const notifEntry = STATUS_NOTIF_MAP[status];
-      if (notifEntry) {
-        const message = notifEntry.msg(order.orderNumber, order.orderType);
-        // Non-blocking — response returns immediately, notification happens async
-        sendCustomerNotification(req.app, order, notifEntry.type, message).catch(() => {});
-      }
-    }
+    // NOTE: Customer status notification is handled by the res.json interceptor
+    // in orderRoutes.js — no call needed here.
 
     res.status(200).json({
       success: true,

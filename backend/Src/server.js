@@ -72,29 +72,19 @@ const io = socketIo(server, {
   }
 });
 
-// Initialize WebSocket service
+// ✅ FIX: Pass the io INSTANCE (not http server) to initializeSocket.
+// socketService now stores this shared io, registers ALL socket event handlers
+// on it (including join_customer_room), and notificationRoutes.js emits on
+// the same instance — so customer rooms are reachable. Previously socketService
+// was calling new Server(io,...) treating io as an http.Server, creating a
+// second Socket.IO instance where no customers had ever joined any rooms.
 initializeSocket(io);
 
 // Make io accessible to routes
 app.set('io', io);
 
-// ============================================
-// NOTIFICATION ROOMS  ← NEW
-// Each customer joins room  customer_<userId>
-// so the server can push updates to them individually.
-// ============================================
-io.on('connection', (socket) => {
-  socket.on('join_customer_room', ({ userId }) => {
-    if (userId) {
-      socket.join(`customer_${userId}`);
-      console.log(`📱 Customer joined notification room: customer_${userId}`);
-    }
-  });
-
-  socket.on('leave_customer_room', ({ userId }) => {
-    if (userId) socket.leave(`customer_${userId}`);
-  });
-});
+// NOTE: join_customer_room is now handled inside socketService.js on the shared io.
+// The duplicate io.on('connection') block that was here has been removed.
 
 const PORT = process.env.PORT || 5000;
 

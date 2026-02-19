@@ -1,25 +1,35 @@
 // backend/src/services/socketService.js - COMPLETE FINAL VERSION WITH ALL FEATURES
-const { Server } = require('socket.io');
+// ── WHAT CHANGED (3 surgical fixes only, everything else is original) ──────────
+// 1. initializeSocket now receives the already-created `io` from server.js
+//    instead of calling `new Server(server,...)` which created a SECOND,
+//    conflicting Socket.IO instance. Customers joined rooms on io #1 (server.js)
+//    but notificationRoutes emitted on io #2 (here) — so nothing was delivered.
+// 2. join_customer_room / leave_customer_room handlers added here so they run
+//    on the same io instance that notificationRoutes uses.
+// 3. getIo() exported so notificationRoutes can reach the shared io as fallback.
+// ──────────────────────────────────────────────────────────────────────────────
 
 let io;
 
-const initializeSocket = (server) => {
-  io = new Server(server, {
-    cors: {
-      origin: [
-        'http://localhost:5173', // Kitchen Display
-        'http://localhost:5174', // Customer App
-        'http://localhost:5175', // Admin Dashboard
-        'http://localhost:5176', // Waiter Station
-        'http://localhost:5177', // Driver App
-      ],
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-      credentials: true
-    }
-  });
+const initializeSocket = (ioInstance) => {
+  // ✅ FIX: receive the shared io, don't create a new Server
+  io = ioInstance;
 
   io.on('connection', (socket) => {
     console.log('✅ Client connected:', socket.id);
+
+    // ── Customer notification rooms ── NEW (fix) ──────────────────────────────
+    // Must be here on the same io that notificationRoutes.js uses to emit.
+    socket.on('join_customer_room', ({ userId }) => {
+      if (userId) {
+        socket.join(`customer_${userId}`);
+        console.log(`📱 Customer joined notification room: customer_${userId}`);
+      }
+    });
+
+    socket.on('leave_customer_room', ({ userId }) => {
+      if (userId) socket.leave(`customer_${userId}`);
+    });
 
     // ============================================
     // DRIVER LOCATION TRACKING
@@ -274,8 +284,12 @@ const emitReservationUpdate = (reservationData) => {
   console.log('📤 Reservation update emitted:', reservationData.action);
 };
 
+// ← NEW: lets notificationRoutes.js reach the shared io as a fallback
+const getIo = () => io;
+
 module.exports = {
   initializeSocket,
+  getIo,             // ← NEW export
   emitDriverLocation,
   emitDeliveryUpdate,
   emitNewOrder,
