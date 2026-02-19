@@ -1,4 +1,4 @@
-// backend/src/models/Order.js (UPDATED TO SUPPORT ALL ORDER TYPES + DRIVER)
+// backend/src/models/Order.js (UPDATED TO SUPPORT ALL ORDER TYPES + DRIVER + NOTIFICATIONS)
 const mongoose = require('mongoose');
 
 const orderItemSchema = new mongoose.Schema({
@@ -30,6 +30,13 @@ const orderSchema = new mongoose.Schema({
     unique: true
   },
   
+  // ✅ NEW: Clerk user ID — used to push notifications to the right customer
+  customerId: {
+    type: String,
+    default: null,
+    index: true
+  },
+
   // Customer Information
   customerName: {
     type: String,
@@ -65,12 +72,12 @@ const orderSchema = new mongoose.Schema({
     default: 0
   },
   
-  // ✅ DRIVER ASSIGNMENT (NEW!)
+  // ✅ DRIVER ASSIGNMENT
   driver: {
-    type: String, // Changed to String to support both mock IDs and real ObjectIds
+    type: String,
   },
-  driverName: String, // Store driver name for quick access
-  driverPhone: String, // Store driver phone
+  driverName: String,
+  driverPhone: String,
   deliveryStatus: {
     type: String,
     enum: ['pending', 'assigned', 'picked-up', 'on-the-way', 'delivered', 'cancelled'],
@@ -141,18 +148,19 @@ const orderSchema = new mongoose.Schema({
   preparingAt: Date,
   readyAt: Date,
   completedAt: Date,
-  deliveredAt: Date // ✅ NEW - Track when delivered
+  deliveredAt: Date
 }, {
   timestamps: true
 });
 
-// Index for faster queries
+// Indexes
 orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ customerName: 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ orderType: 1 });
-orderSchema.index({ deliveryStatus: 1 }); // ✅ NEW
-orderSchema.index({ driver: 1 }); // ✅ NEW
+orderSchema.index({ deliveryStatus: 1 });
+orderSchema.index({ driver: 1 });
 orderSchema.index({ createdAt: -1 });
+orderSchema.index({ customerId: 1 }); // ✅ NEW
 
 module.exports = mongoose.model('Order', orderSchema);
