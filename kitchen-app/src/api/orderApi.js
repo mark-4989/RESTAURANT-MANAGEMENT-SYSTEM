@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Strip trailing /api if env var includes it — prevents /api/api/ double-prefix
+const API_URL = (import.meta.env.VITE_API_URL || 'https://restaurant-management-system-1-7v0m.onrender.com').replace(/\/api\/?$/, '') + '/api';
 
 // Get all orders
 export const getAllOrders = async (status = 'all', date = '') => {
