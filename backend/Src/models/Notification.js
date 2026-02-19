@@ -1,4 +1,7 @@
 // server/models/Notification.js
+// FIX: Added missing 'orderType' field. Previously mongoose strict mode was
+// silently dropping orderType when createAndEmitNotification tried to save it,
+// meaning messages like "your delivery order" vs "your pickup order" were lost.
 const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema(
@@ -32,6 +35,12 @@ const notificationSchema = new mongoose.Schema(
     },
     orderNumber: {
       type: String,
+      default: null,
+    },
+    // ← FIX: was missing, causing orderType to be silently dropped by mongoose
+    orderType: {
+      type: String,
+      enum: ['dine-in', 'pickup', 'delivery', 'preorder'],
       default: null,
     },
     message: {
