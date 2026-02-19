@@ -422,13 +422,13 @@ const OrderPage = () => {
 
       if (response.ok && data.success) {
         // ── Immediate in-app notification (before socket round-trip) ──────────
-        if (user?.id) {
-          addNotification('ORDER_PLACED', {
-            orderId:     data.data._id,
-            orderNumber: data.data.orderNumber,
-            orderType,   // so the message says "your delivery order" vs "your pickup order"
-          });
-        }
+        // FIX: removed `if (user?.id)` guard — addNotification always fires so
+        // the toast shows instantly regardless of Clerk state or socket connection.
+        addNotification('ORDER_PLACED', {
+          orderId:     data.data._id,
+          orderNumber: data.data.orderNumber,
+          orderType,   // message says "your delivery order" vs "your pickup order"
+        });
 
         showToast(`🎉 Order #${data.data.orderNumber} placed!`, 'success');
 

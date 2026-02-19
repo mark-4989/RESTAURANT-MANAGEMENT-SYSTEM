@@ -1,4 +1,11 @@
 // customer-app/src/context/NotificationContext.jsx
+// ── FIXES ─────────────────────────────────────────────────────────────────────
+// 1. Deduplication now matches on orderNumber+type (not just _id) so the
+//    optimistic local notification and the server socket notification don't both
+//    appear — the local one gets replaced by the real server one.
+// 2. Socket reconnection is more aggressive for Render's free tier.
+// 3. addNotification always available regardless of userId/socket state.
+// ──────────────────────────────────────────────────────────────────────────────
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 
@@ -21,12 +28,10 @@ export const NOTIFICATION_TYPES = {
   PROMO:           { label: 'Special Offer',       emoji: '🎉', color: '#f59e0b' },
 };
 
-// Warm, friendly messages per order type and status
 export const getNotificationMessage = (type, orderNumber, orderType = 'pickup') => {
-  const typeLabel = orderType === 'delivery' ? 'delivery' : orderType === 'dine-in' ? 'dine-in order' : 'pickup order';
   const messages = {
     ORDER_PLACED: {
-      delivery: `Your delivery order #${orderNumber} is confirmed! 🎉 We're getting everything ready for you.`,
+      delivery:  `Your delivery order #${orderNumber} is confirmed! 🎉 We're getting everything ready for you.`,
       pickup:    `Your pickup order #${orderNumber} is in! 🎉 We'll let you know the moment it's ready.`,
       'dine-in': `Welcome! Your dine-in order #${orderNumber} has been placed. Sit back and relax!`,
       preorder:  `Your pre-order #${orderNumber} is booked! We'll have everything perfect for you. 🍽️`,
@@ -35,10 +40,10 @@ export const getNotificationMessage = (type, orderNumber, orderType = 'pickup') 
     ORDER_CONFIRMED: `Great news! Your order #${orderNumber} has been confirmed and sent to the kitchen. 🙌`,
     PREPARING:       `Our chef is now preparing your order #${orderNumber} with love and care. 🔥 Smells amazing already!`,
     READY: {
-      delivery: `Your order #${orderNumber} is packed and ready — the driver will pick it up shortly! 🚚`,
-      pickup:   `Your order #${orderNumber} is ready for pickup! Come grab it while it's hot. 🍽️`,
+      delivery:  `Your order #${orderNumber} is packed and ready — the driver will pick it up shortly! 🚚`,
+      pickup:    `Your order #${orderNumber} is ready for pickup! Come grab it while it's hot. 🍽️`,
       'dine-in': `Your order #${orderNumber} is on its way to your table! Enjoy your meal. 🍽️`,
-      default:  `Your order #${orderNumber} is ready! 🍽️`,
+      default:   `Your order #${orderNumber} is ready! 🍽️`,
     },
     ON_THE_WAY:      `Your order #${orderNumber} is on the way — the driver is heading to you now. 🚚 Track it live!`,
     DELIVERED:       `Your order #${orderNumber} has arrived! We hope you enjoy every bite. Bon appétit! 🏠❤️`,
@@ -63,7 +68,7 @@ export const NotificationProvider = ({ children, userId }) => {
   const toastTimersRef = useRef({});
   const toastCountRef  = useRef(0);
 
-  // ── Load existing notifications from DB ─────────────────────────────────────
+  // ── Load existing notifications from DB ────────────────────────────────────
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
 
@@ -72,26 +77,35 @@ export const NotificationProvider = ({ children, userId }) => {
       .then(({ data }) => {
         if (Array.isArray(data)) setNotifications(data);
       })
-      .catch(err => console.error('Notifications fetch failed:', err))
+      .catch(err => console.warn('[Notif] Fetch from DB failed:', err))
       .finally(() => setLoading(false));
   }, [userId]);
 
-  // ── Socket.IO: real-time pushes ──────────────────────────────────────────────
+  // ── Socket.IO: real-time pushes ────────────────────────────────────────────
   useEffect(() => {
     if (!userId) return;
 
     const socket = io(API_URL, {
       transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 2000,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
     });
     socketRef.current = socket;
 
     socket.on('connect', () => {
+      console.log('[Socket] Connected, joining room: customer_' + userId);
+      socket.emit('join_customer_room', { userId });
+    });
+
+    socket.on('reconnect', () => {
+      console.log('[Socket] Reconnected, re-joining room');
       socket.emit('join_customer_room', { userId });
     });
 
     socket.on('new_notification', (notif) => {
+      console.log('[Socket] Received new_notification:', notif.type, notif.orderNumber);
       const meta     = NOTIFICATION_TYPES[notif.type] || {};
       const enriched = {
         ...notif,
@@ -99,15 +113,29 @@ export const NotificationProvider = ({ children, userId }) => {
         color: notif.color || meta.color,
         label: notif.label || meta.label,
       };
+
       setNotifications(prev => {
-        // Deduplicate: skip if same _id already exists
-        if (prev.some(n => n._id === enriched._id)) return prev;
+        // ── FIX: deduplicate by orderNumber+type so the optimistic local notif
+        // is replaced by the real server one instead of both showing.
+        const dupeIdx = prev.findIndex(n =>
+          n.orderNumber &&
+          n.orderNumber === enriched.orderNumber &&
+          n.type === enriched.type
+        );
+        if (dupeIdx >= 0) {
+          // Replace the optimistic local copy with the real server one
+          const next = [...prev];
+          next[dupeIdx] = { ...enriched };
+          return next;
+        }
         return [enriched, ...prev];
       });
+
       pushToast(enriched);
     });
 
-    socket.on('connect_error', err => console.error('Socket error:', err.message));
+    socket.on('connect_error', err => console.warn('[Socket] Connection error:', err.message));
+    socket.on('disconnect', reason => console.log('[Socket] Disconnected:', reason));
 
     return () => {
       socket.emit('leave_customer_room', { userId });
@@ -116,7 +144,7 @@ export const NotificationProvider = ({ children, userId }) => {
     };
   }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Toast helpers ────────────────────────────────────────────────────────────
+  // ── Toast helpers ──────────────────────────────────────────────────────────
   const pushToast = useCallback((notif) => {
     toastCountRef.current += 1;
     const toastId = `toast_${Date.now()}_${toastCountRef.current}`;
@@ -135,20 +163,22 @@ export const NotificationProvider = ({ children, userId }) => {
     setToasts(prev => prev.filter(t => t.toastId !== toastId));
   }, []);
 
-  // ── Optimistic local notification (called right when order is placed) ────────
+  // ── Optimistic local notification ──────────────────────────────────────────
+  // Called immediately in OrderPage when order is placed.
+  // Works regardless of socket/server state — always shows the toast instantly.
   const addNotification = useCallback((type, { orderId, orderNumber, message, orderType, extra = {} }) => {
     const meta  = NOTIFICATION_TYPES[type] || {};
     const notif = {
-      _id: `local_${Date.now()}`,
+      _id:       `local_${Date.now()}`,
       type,
       orderId,
       orderNumber,
-      title:   meta.label,
-      label:   meta.label,
-      message: message || getNotificationMessage(type, orderNumber, orderType),
-      emoji:   meta.emoji,
-      color:   meta.color,
-      read:    false,
+      title:     meta.label,
+      label:     meta.label,
+      message:   message || getNotificationMessage(type, orderNumber, orderType),
+      emoji:     meta.emoji,
+      color:     meta.color,
+      read:      false,
       createdAt: new Date().toISOString(),
       ...extra,
     };
@@ -157,10 +187,11 @@ export const NotificationProvider = ({ children, userId }) => {
     return notif;
   }, [pushToast]);
 
-  // ── Read actions ─────────────────────────────────────────────────────────────
+  // ── Read actions ───────────────────────────────────────────────────────────
   const markAsRead = useCallback(async (notifId) => {
     setNotifications(prev => prev.map(n => n._id === notifId ? { ...n, read: true } : n));
-    if (!notifId.startsWith('local_')) {
+    const idStr = String(notifId || '');
+    if (idStr && !idStr.startsWith('local_') && !idStr.startsWith('socket_')) {
       fetch(`${API_URL}/api/notifications/${notifId}/read`, { method: 'PATCH' }).catch(() => {});
     }
   }, []);
