@@ -1,160 +1,143 @@
-// customer-app/src/context/NotificationContext.jsx
-// ── FIXES ─────────────────────────────────────────────────────────────────────
-// 1. Deduplication now matches on orderNumber+type (not just _id) so the
-//    optimistic local notification and the server socket notification don't both
-//    appear — the local one gets replaced by the real server one.
-// 2. Socket reconnection is more aggressive for Render's free tier.
-// 3. addNotification always available regardless of userId/socket state.
-// ──────────────────────────────────────────────────────────────────────────────
+\// customer-app/src/context/NotificationContext.jsx — COMPLETE FILE
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 
 const NotificationContext = createContext(null);
 
-// Strip trailing /api — prevents /api/api/ double-prefix
-const API_URL = (import.meta.env.VITE_API_URL || 'https://restaurant-management-system-1-7v0m.onrender.com').replace(/\/api\/?$/, '');
+// Strip trailing /api if Vercel env var includes it — prevents /api/api/ double-prefix
+const API_URL = (
+  import.meta.env.VITE_API_URL || 'https://restaurant-management-system-1-7v0m.onrender.com'
+).replace(/\/api\/?$/, '');
 
+// ── Metadata for every notification type ─────────────────────────────────────
 export const NOTIFICATION_TYPES = {
-  ORDER_PLACED:    { label: 'Order Placed',        emoji: '🧾', color: '#3b82f6' },
-  ORDER_CONFIRMED: { label: 'Order Confirmed',     emoji: '✅', color: '#10b981' },
-  PREPARING:       { label: 'Being Prepared',      emoji: '🔥', color: '#f59e0b' },
-  READY:           { label: 'Ready to Collect!',   emoji: '🍽️', color: '#8b5cf6' },
-  ON_THE_WAY:      { label: 'On the Way',          emoji: '🚚', color: '#06b6d4' },
-  DELIVERED:       { label: 'Delivered',           emoji: '🏠', color: '#10b981' },
-  PAYMENT_SUCCESS: { label: 'Payment Confirmed',   emoji: '💳', color: '#10b981' },
-  PAYMENT_FAILED:  { label: 'Payment Failed',      emoji: '❌', color: '#ef4444' },
-  CANCELLED:       { label: 'Order Cancelled',     emoji: '🚫', color: '#ef4444' },
-  CHEF_MESSAGE:    { label: 'Message from Chef',   emoji: '👨‍🍳', color: '#dc2626' },
-  PROMO:           { label: 'Special Offer',       emoji: '🎉', color: '#f59e0b' },
+  ORDER_PLACED:    { label: 'Order Placed',      emoji: '🧾', color: '#3b82f6' },
+  ORDER_CONFIRMED: { label: 'Order Confirmed',   emoji: '✅', color: '#10b981' },
+  PREPARING:       { label: 'Being Prepared',    emoji: '🔥', color: '#f59e0b' },
+  READY:           { label: 'Ready!',            emoji: '🍽️', color: '#8b5cf6' },
+  ON_THE_WAY:      { label: 'On the Way',        emoji: '🚚', color: '#06b6d4' },
+  DELIVERED:       { label: 'Delivered',         emoji: '🏠', color: '#10b981' },
+  PAYMENT_SUCCESS: { label: 'Payment Confirmed', emoji: '💳', color: '#10b981' },
+  PAYMENT_FAILED:  { label: 'Payment Failed',    emoji: '❌', color: '#ef4444' },
+  CANCELLED:       { label: 'Order Cancelled',   emoji: '🚫', color: '#ef4444' },
+  CHEF_MESSAGE:    { label: 'Message from Chef', emoji: '👨‍🍳', color: '#dc2626' },
+  PROMO:           { label: 'Special Offer',     emoji: '🎉', color: '#f59e0b' },
 };
 
-export const getNotificationMessage = (type, orderNumber, orderType = 'pickup') => {
-  const messages = {
-    ORDER_PLACED: {
-      delivery:  `Your delivery order #${orderNumber} is confirmed! 🎉 We're getting everything ready for you.`,
-      pickup:    `Your pickup order #${orderNumber} is in! 🎉 We'll let you know the moment it's ready.`,
-      'dine-in': `Welcome! Your dine-in order #${orderNumber} has been placed. Sit back and relax!`,
-      preorder:  `Your pre-order #${orderNumber} is booked! We'll have everything perfect for you. 🍽️`,
-      default:   `Your order #${orderNumber} has been placed! We're on it. 🧾`,
-    },
-    ORDER_CONFIRMED: `Great news! Your order #${orderNumber} has been confirmed and sent to the kitchen. 🙌`,
-    PREPARING:       `Our chef is now preparing your order #${orderNumber} with love and care. 🔥 Smells amazing already!`,
-    READY: {
-      delivery:  `Your order #${orderNumber} is packed and ready — the driver will pick it up shortly! 🚚`,
-      pickup:    `Your order #${orderNumber} is ready for pickup! Come grab it while it's hot. 🍽️`,
-      'dine-in': `Your order #${orderNumber} is on its way to your table! Enjoy your meal. 🍽️`,
-      default:   `Your order #${orderNumber} is ready! 🍽️`,
-    },
-    ON_THE_WAY:      `Your order #${orderNumber} is on the way — the driver is heading to you now. 🚚 Track it live!`,
-    DELIVERED:       `Your order #${orderNumber} has arrived! We hope you enjoy every bite. Bon appétit! 🏠❤️`,
-    PAYMENT_SUCCESS: `Payment for order #${orderNumber} was successful. Thank you for dining with us! 💳`,
-    PAYMENT_FAILED:  `Payment for order #${orderNumber} could not be processed. Please try again or contact support.`,
-    CANCELLED:       `Your order #${orderNumber} has been cancelled. If you need help, we're here for you.`,
-    CHEF_MESSAGE:    `The chef has sent you a message about order #${orderNumber}. 👨‍🍳`,
-    PROMO:           `You have a special offer waiting for you! 🎉`,
-  };
-
-  const entry = messages[type];
-  if (!entry) return `Update on your order #${orderNumber}`;
-  if (typeof entry === 'string') return entry;
-  return entry[orderType] || entry.default || entry.delivery || Object.values(entry)[0];
-};
-
+// ── Provider ──────────────────────────────────────────────────────────────────
 export const NotificationProvider = ({ children, userId }) => {
   const [notifications, setNotifications] = useState([]);
   const [toasts, setToasts]               = useState([]);
   const [loading, setLoading]             = useState(true);
+
   const socketRef      = useRef(null);
   const toastTimersRef = useRef({});
-  const toastCountRef  = useRef(0);
 
-  // ── Load existing notifications from DB ────────────────────────────────────
+  // KEY FIX: store userId in a ref so the socket connect handler always
+  // reads the latest value — eliminates the race condition where Clerk resolves
+  // userId AFTER the socket already connected (or vice-versa).
+  const userIdRef = useRef(userId);
   useEffect(() => {
-    if (!userId) { setLoading(false); return; }
-
-    fetch(`${API_URL}/api/notifications/${userId}`)
-      .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(({ data }) => {
-        if (Array.isArray(data)) setNotifications(data);
-      })
-      .catch(err => console.warn('[Notif] Fetch from DB failed:', err))
-      .finally(() => setLoading(false));
+    userIdRef.current = userId;
   }, [userId]);
 
-  // ── Socket.IO: real-time pushes ────────────────────────────────────────────
+  // ── Fetch existing notifications from DB ────────────────────────────────────
+  const fetchNotifications = useCallback(async (uid) => {
+    if (!uid) { setLoading(false); return; }
+    try {
+      console.log('🔔 Fetching notifications for:', uid);
+      const res  = await fetch(`${API_URL}/api/notifications/${uid}`);
+      const data = await res.json();
+      if (data.success) {
+        setNotifications(data.data || []);
+        console.log('🔔 Loaded', (data.data || []).length, 'notifications');
+      }
+    } catch (err) {
+      console.error('🔔 Fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ── Connect socket — runs ONCE on mount ─────────────────────────────────────
   useEffect(() => {
-    if (!userId) return;
+    console.log('🔌 Connecting notification socket →', API_URL);
 
     const socket = io(API_URL, {
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 10,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      timeout: 20000,
+      reconnectionDelay:    2000,
     });
+
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('[Socket] Connected, joining room: customer_' + userId);
-      socket.emit('join_customer_room', { userId });
-    });
-
-    socket.on('reconnect', () => {
-      console.log('[Socket] Reconnected, re-joining room');
-      socket.emit('join_customer_room', { userId });
+      console.log('✅ Notification socket connected:', socket.id);
+      // Read userId from ref — has the correct value even if Clerk was slow
+      const uid = userIdRef.current;
+      if (uid) {
+        socket.emit('join_customer_room', { userId: uid });
+        console.log('📱 Joined room: customer_' + uid);
+      } else {
+        console.log('📱 Socket connected — userId not ready yet, will join when Clerk resolves');
+      }
     });
 
     socket.on('new_notification', (notif) => {
-      console.log('[Socket] Received new_notification:', notif.type, notif.orderNumber);
-      const meta     = NOTIFICATION_TYPES[notif.type] || {};
-      const enriched = {
-        ...notif,
-        emoji: notif.emoji || meta.emoji,
-        color: notif.color || meta.color,
-        label: notif.label || meta.label,
-      };
-
+      console.log('🔔 Socket notification received:', notif.type, notif.orderNumber);
       setNotifications(prev => {
-        // ── FIX: deduplicate by orderNumber+type so the optimistic local notif
-        // is replaced by the real server one instead of both showing.
-        const dupeIdx = prev.findIndex(n =>
-          n.orderNumber &&
-          n.orderNumber === enriched.orderNumber &&
-          n.type === enriched.type
-        );
-        if (dupeIdx >= 0) {
-          // Replace the optimistic local copy with the real server one
-          const next = [...prev];
-          next[dupeIdx] = { ...enriched };
-          return next;
-        }
-        return [enriched, ...prev];
+        if (prev.some(n => n._id === notif._id)) return prev; // dedupe
+        return [notif, ...prev];
       });
-
-      pushToast(enriched);
+      pushToast(notif);
     });
 
-    socket.on('connect_error', err => console.warn('[Socket] Connection error:', err.message));
-    socket.on('disconnect', reason => console.log('[Socket] Disconnected:', reason));
+    socket.on('connect_error', (err) => {
+      console.error('❌ Socket connect error:', err.message);
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('🔌 Socket disconnected:', reason);
+    });
 
     return () => {
-      socket.emit('leave_customer_room', { userId });
+      const uid = userIdRef.current;
+      if (uid) socket.emit('leave_customer_room', { userId: uid });
       socket.disconnect();
-      Object.values(toastTimersRef.current).forEach(clearTimeout);
     };
-  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // empty — socket connects once, userId changes handled via ref + effect below
 
-  // ── Toast helpers ──────────────────────────────────────────────────────────
+  // ── Re-join room whenever userId becomes available / changes ─────────────────
+  // Clerk starts with userId=null, then resolves to the real ID.
+  // This effect fires the moment we get a real userId.
+  useEffect(() => {
+    if (!userId) return;
+
+    const socket = socketRef.current;
+    if (!socket) return;
+
+    // Emit join UNCONDITIONALLY — Socket.IO buffers it if not yet connected
+    socket.emit('join_customer_room', { userId });
+    console.log('📱 join_customer_room emitted for:', userId);
+
+    // Load notification history from DB now that we have a real userId
+    fetchNotifications(userId);
+  }, [userId, fetchNotifications]);
+
+  // ── Toast push / dismiss ────────────────────────────────────────────────────
   const pushToast = useCallback((notif) => {
-    toastCountRef.current += 1;
-    const toastId = `toast_${Date.now()}_${toastCountRef.current}`;
-    setToasts(prev => [...prev, { ...notif, toastId }]);
+    const toastId = `toast_${notif._id || Date.now()}`;
+    // Spread NOTIFICATION_TYPES meta so ToastNotifications can read
+    // toast.emoji, toast.label, toast.color directly without extra lookups.
+    const meta = NOTIFICATION_TYPES[notif.type] || {};
 
-    const timer = setTimeout(() => {
+    setToasts(prev => [{ ...meta, ...notif, toastId }, ...prev].slice(0, 5));
+
+    toastTimersRef.current[toastId] = setTimeout(() => {
       setToasts(prev => prev.filter(t => t.toastId !== toastId));
       delete toastTimersRef.current[toastId];
-    }, 5500);
-    toastTimersRef.current[toastId] = timer;
+    }, 6000);
   }, []);
 
   const dismissToast = useCallback((toastId) => {
@@ -163,52 +146,59 @@ export const NotificationProvider = ({ children, userId }) => {
     setToasts(prev => prev.filter(t => t.toastId !== toastId));
   }, []);
 
-  // ── Optimistic local notification ──────────────────────────────────────────
-  // Called immediately in OrderPage when order is placed.
-  // Works regardless of socket/server state — always shows the toast instantly.
-  const addNotification = useCallback((type, { orderId, orderNumber, message, orderType, extra = {} }) => {
-    const meta  = NOTIFICATION_TYPES[type] || {};
-    const notif = {
-      _id:       `local_${Date.now()}`,
+  // ── addNotification — instant local notification from OrderPage ──────────────
+  // Called the moment the order API returns success, gives immediate toast+badge
+  // BEFORE the backend socket message arrives (which may take a few hundred ms).
+  const addNotification = useCallback((type, { orderId, orderNumber, orderType, message: customMsg } = {}) => {
+    const meta = NOTIFICATION_TYPES[type] || {};
+    const now  = new Date().toISOString();
+
+    const localNotif = {
+      _id:         `local_${Date.now()}`,
+      userId:      userIdRef.current || 'local',
       type,
-      orderId,
-      orderNumber,
-      title:     meta.label,
-      label:     meta.label,
-      message:   message || getNotificationMessage(type, orderNumber, orderType),
-      emoji:     meta.emoji,
-      color:     meta.color,
-      read:      false,
-      createdAt: new Date().toISOString(),
-      ...extra,
+      orderId:     orderId     || null,
+      orderNumber: orderNumber || null,
+      orderType:   orderType   || null,
+      message:     customMsg   || `${meta.label || 'Notification'} — Order #${orderNumber || '?'}`,
+      read:        false,
+      createdAt:   now,
+      updatedAt:   now,
     };
-    setNotifications(prev => [notif, ...prev]);
-    pushToast(notif);
-    return notif;
+
+    console.log('🔔 addNotification (instant local):', type, orderNumber);
+    setNotifications(prev => [localNotif, ...prev]);
+    pushToast(localNotif);
   }, [pushToast]);
 
-  // ── Read actions ───────────────────────────────────────────────────────────
+  // ── Mark single as read ─────────────────────────────────────────────────────
   const markAsRead = useCallback(async (notifId) => {
     setNotifications(prev => prev.map(n => n._id === notifId ? { ...n, read: true } : n));
-    const idStr = String(notifId || '');
-    if (idStr && !idStr.startsWith('local_') && !idStr.startsWith('socket_')) {
-      fetch(`${API_URL}/api/notifications/${notifId}/read`, { method: 'PATCH' }).catch(() => {});
+    if (!String(notifId).startsWith('local_') && userIdRef.current) {
+      try { await fetch(`${API_URL}/api/notifications/${notifId}/read`, { method: 'PATCH' }); }
+      catch (err) { console.error('markAsRead error:', err); }
     }
   }, []);
 
+  // ── Mark all as read ────────────────────────────────────────────────────────
   const markAllAsRead = useCallback(async () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    if (userId) {
-      fetch(`${API_URL}/api/notifications/read-all/${userId}`, { method: 'PATCH' }).catch(() => {});
+    const uid = userIdRef.current;
+    if (uid) {
+      try { await fetch(`${API_URL}/api/notifications/read-all/${uid}`, { method: 'PATCH' }); }
+      catch (err) { console.error('markAllAsRead error:', err); }
     }
-  }, [userId]);
+  }, []);
 
+  // ── Clear all ───────────────────────────────────────────────────────────────
   const clearAll = useCallback(async () => {
     setNotifications([]);
-    if (userId) {
-      fetch(`${API_URL}/api/notifications/clear/${userId}`, { method: 'DELETE' }).catch(() => {});
+    const uid = userIdRef.current;
+    if (uid) {
+      try { await fetch(`${API_URL}/api/notifications/clear/${uid}`, { method: 'DELETE' }); }
+      catch (err) { console.error('clearAll error:', err); }
     }
-  }, [userId]);
+  }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -229,8 +219,11 @@ export const NotificationProvider = ({ children, userId }) => {
   );
 };
 
+// ── Hook ──────────────────────────────────────────────────────────────────────
 export const useNotifications = () => {
   const ctx = useContext(NotificationContext);
-  if (!ctx) throw new Error('useNotifications must be used within NotificationProvider');
+  if (!ctx) throw new Error('useNotifications must be used inside <NotificationProvider>');
   return ctx;
 };
+
+export default NotificationContext;
