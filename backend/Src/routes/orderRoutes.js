@@ -237,4 +237,4 @@ router.patch('/:id/update-location', async (req, res) => {
   }
 });
 
-module.exports = router;s
+module.exports = router;
