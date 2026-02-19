@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { MapPin, X, Navigation, Phone, Package, Clock, Radio, Truck } from 'lucide-react';
+import { useNotifications } from '../context/NotificationContext'; // ← NEW
 import '../styles/MyOrders.css';
 
 // Strip trailing /api if the env var includes it, so we never get /api/api/
@@ -9,8 +10,40 @@ const _RAW_URL  = import.meta.env.VITE_API_URL || 'https://restaurant-management
 const API_URL   = _RAW_URL.replace(/\/api\/?$/, '');
 const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || 'https://restaurant-management-system-1-7v0m.onrender.com').replace(/\/api\/?$/, '');
 
+// ── Notification messages per status (mirrors backend getMessage) ─────────────
+const STATUS_MESSAGES = {
+  confirmed: (n, t) => ({
+    delivery:  `Great news! Your delivery order #${n} is confirmed and queued for the kitchen. 🙌`,
+    pickup:    `Your pickup order #${n} is confirmed! We'll let you know when it's ready. 🙌`,
+    'dine-in': `Your dine-in order #${n} is confirmed! Our team is on it. 😊`,
+    preorder:  `Your pre-order #${n} is confirmed! We'll start preparing at the right time. ⏰`,
+  }[t] || `Your order #${n} has been confirmed! 🙌`,
+  preparing: (n) => `Our chef is now preparing your order #${n} with love and care. 🔥`,
+  ready: (n, t) => ({
+    delivery:  `Your order #${n} is packed and ready — the driver will pick it up shortly! 🚚`,
+    pickup:    `Your order #${n} is hot and ready for pickup! Come grab it while it's fresh. 🍽️`,
+    'dine-in': `Your order #${n} is on its way to your table right now! Enjoy. 🍽️`,
+    preorder:  `Your pre-order #${n} is ready! 🎉`,
+  }[t] || `Your order #${n} is ready! 🍽️`,
+  completed: (n) => `Your order #${n} is complete. Thank you for dining with us! ⭐`,
+  cancelled: (n) => `Your order #${n} has been cancelled. Contact us if you need help. 💙`,
+  'on-the-way': (n) => `Your order #${n} is on its way — the driver is heading to you now! 🚚`,
+  delivered:    (n) => `Your order #${n} has arrived! Bon appétit! 🏠❤️`,
+};
+
+// Map kitchen status → notification type
+const STATUS_TO_TYPE = {
+  confirmed:    'ORDER_CONFIRMED',
+  preparing:    'PREPARING',
+  ready:        'READY',
+  completed:    'DELIVERED',
+  cancelled:    'CANCELLED',
+};
+
 const MyOrders = () => {
   const { user } = useUser();
+  const { addNotification } = useNotifications(); // ← NEW
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -24,6 +57,9 @@ const MyOrders = () => {
   const socketRef = useRef(null);
   const driverTrailRef = useRef([]);
 
+  // ← NEW: tracks last-known status of each order so we only notify on changes
+  const prevStatusRef = useRef({}); // { [orderId]: { status, deliveryStatus } }
+
   useEffect(() => {
     if (user) {
       fetchOrders();
@@ -33,13 +69,12 @@ const MyOrders = () => {
 
     return () => {
       if (socketRef.current) {
-        socketRef.current.disconnect(); // Socket.IO uses disconnect(), not close()
+        socketRef.current.disconnect();
       }
     };
   }, [user]);
 
   const initializeWebSocket = () => {
-    // Your backend uses Socket.IO — raw WebSocket won't work with it
     import('socket.io-client').then(({ io }) => {
       const socket = io(BACKEND_URL, {
         transports: ['websocket', 'polling'],
@@ -60,6 +95,8 @@ const MyOrders = () => {
         }
       });
 
+      // When kitchen updates an order, re-fetch orders — the comparison
+      // logic in fetchOrders will detect status changes and fire notifications.
       socket.on('ORDER_STATUS_UPDATE',    () => fetchOrders());
       socket.on('DELIVERY_STATUS_UPDATE', () => fetchOrders());
 
@@ -85,12 +122,9 @@ const MyOrders = () => {
 
   const fetchOrders = async () => {
     try {
-      // ← UPDATED: query by customerId (Clerk user ID) for accurate results.
-      // Falls back to customerName if customerId is not set on older orders.
       const customerId   = user.id;
       const customerName = user.fullName || user.firstName || 'Guest';
 
-      // Try customerId first — this is the reliable way going forward
       const response = await fetch(
         `${API_URL}/api/orders?customerId=${encodeURIComponent(customerId)}&customerName=${encodeURIComponent(customerName)}`
       );
@@ -100,6 +134,54 @@ const MyOrders = () => {
         const sortedOrders = data.data.sort((a, b) => 
           new Date(b.createdAt) - new Date(a.createdAt)
         );
+
+        // ── NEW: compare each order's status against what we saw last time ──────
+        // isFirstLoad = true on the very first fetch — just snapshot, no notifications.
+        // On every subsequent fetch, compare and fire a notification for each change.
+        const prev = prevStatusRef.current;
+        const isFirstLoad = Object.keys(prev).length === 0;
+
+        sortedOrders.forEach(order => {
+          const id = order._id;
+          const newStatus      = order.status;
+          const newDelivStatus = order.deliveryStatus;
+          const orderNum       = order.orderNumber;
+          const orderType      = order.orderType;
+
+          if (!isFirstLoad) {
+            // Kitchen status changed
+            if (prev[id] && prev[id].status !== newStatus) {
+              const notifType = STATUS_TO_TYPE[newStatus];
+              const msgFn     = STATUS_MESSAGES[newStatus];
+              if (notifType && msgFn) {
+                addNotification(notifType, {
+                  orderId:     id,
+                  orderNumber: orderNum,
+                  orderType,
+                  message: msgFn(orderNum, orderType),
+                });
+              }
+            }
+
+            // Delivery status changed (on-the-way / delivered)
+            if (prev[id] && prev[id].deliveryStatus !== newDelivStatus) {
+              const msgFn = STATUS_MESSAGES[newDelivStatus];
+              if (msgFn) {
+                const type = newDelivStatus === 'delivered' ? 'DELIVERED' : 'ON_THE_WAY';
+                addNotification(type, {
+                  orderId:     id,
+                  orderNumber: orderNum,
+                  orderType,
+                  message: msgFn(orderNum, orderType),
+                });
+              }
+            }
+          }
+
+          // Always update the snapshot
+          prev[id] = { status: newStatus, deliveryStatus: newDelivStatus };
+        });
+
         setOrders(sortedOrders);
       }
     } catch (error) {
@@ -117,7 +199,6 @@ const MyOrders = () => {
 
     if (mapInstanceRef.current) mapInstanceRef.current.remove();
 
-    // Reset trail on new order
     driverTrailRef.current = [];
 
     mapInstanceRef.current = new mapboxgl.Map({
@@ -134,7 +215,6 @@ const MyOrders = () => {
     mapInstanceRef.current.addControl(new mapboxgl.ScaleControl({ unit: 'metric' }), 'bottom-left');
 
     mapInstanceRef.current.on('load', () => {
-      // Trail source for driver breadcrumbs
       mapInstanceRef.current.addSource('driver-trail', {
         type: 'geojson',
         data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } },
@@ -153,7 +233,6 @@ const MyOrders = () => {
       });
     });
 
-    // Styled customer destination marker
     const destEl = document.createElement('div');
     destEl.innerHTML = `
       <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
@@ -201,7 +280,6 @@ const MyOrders = () => {
   const updateDriverMarker = (location) => {
     if (!mapInstanceRef.current || !window.mapboxgl) return;
 
-    // Append breadcrumb to trail
     driverTrailRef.current.push([location.lng, location.lat]);
     if (mapInstanceRef.current.getSource('driver-trail')) {
       mapInstanceRef.current.getSource('driver-trail').setData({
@@ -258,7 +336,6 @@ const MyOrders = () => {
         .addTo(mapInstanceRef.current);
     }
 
-    // Auto-fit both markers in view
     if (destinationMarkerRef.current) {
       const bounds = new window.mapboxgl.LngLatBounds();
       bounds.extend([location.lng, location.lat]);
@@ -266,7 +343,6 @@ const MyOrders = () => {
       mapInstanceRef.current.fitBounds(bounds, { padding: 100, maxZoom: 16, duration: 1000 });
     }
 
-    // Draw route from driver to customer
     if (destinationMarkerRef.current) {
       const destLngLat = destinationMarkerRef.current.getLngLat();
       drawRoute(location, { lat: destLngLat.lat, lng: destLngLat.lng });
@@ -314,7 +390,6 @@ const MyOrders = () => {
     if (driverMarkerRef.current) { driverMarkerRef.current.remove(); driverMarkerRef.current = null; }
     setTimeout(() => initializeMap(order), 100);
 
-    // Socket.IO uses .emit() not .send()
     if (socketRef.current && socketRef.current.connected) {
       socketRef.current.emit('SUBSCRIBE_ORDER', { orderId: order._id });
     }
