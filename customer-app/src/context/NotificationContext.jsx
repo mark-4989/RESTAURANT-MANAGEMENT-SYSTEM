@@ -4,7 +4,8 @@ import { io } from 'socket.io-client';
 
 const NotificationContext = createContext(null);
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// Strip trailing /api if Vercel env var includes it — prevents /api/api/ double-prefix
+const API_URL = (import.meta.env.VITE_API_URL || 'https://restaurant-management-system-1-7v0m.onrender.com').replace(/\/api\/?$/, '');
 
 export const NOTIFICATION_TYPES = {
   ORDER_PLACED:    { label: 'Order Placed',      emoji: '🧾', color: '#3b82f6' },
@@ -27,20 +28,35 @@ export const NotificationProvider = ({ children, userId }) => {
   const socketRef      = useRef(null);
   const toastTimersRef = useRef({});
 
+  // Debug: log which API URL is being used so you can confirm in browser console
+  useEffect(() => {
+    console.log('🔔 NotificationContext using API_URL:', API_URL);
+    console.log('🔔 userId:', userId);
+  }, [userId]);
+
   // ── Load existing notifications from DB ───────────────────────────────────
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
 
+    console.log('📥 Fetching notifications for user:', userId);
     fetch(`${API_URL}/api/notifications/${userId}`)
-      .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(({ data }) => { if (Array.isArray(data)) setNotifications(data); })
-      .catch(() => {/* offline – start empty */})
+      .then(r => {
+        console.log('📥 Notifications fetch status:', r.status);
+        return r.ok ? r.json() : Promise.reject(r.status);
+      })
+      .then(({ data }) => {
+        console.log('📥 Notifications received:', data?.length || 0);
+        if (Array.isArray(data)) setNotifications(data);
+      })
+      .catch((err) => console.error('📥 Notifications fetch failed:', err))
       .finally(() => setLoading(false));
   }, [userId]);
 
   // ── Socket.IO: join room, listen for real-time pushes ────────────────────
   useEffect(() => {
     if (!userId) return;
+
+    console.log('🔌 Connecting notification socket to:', API_URL);
 
     const socket = io(API_URL, {
       transports: ['websocket', 'polling'],
@@ -50,12 +66,17 @@ export const NotificationProvider = ({ children, userId }) => {
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('🔔 Notification socket connected');
+      console.log('✅ Notification socket connected, joining room: customer_' + userId);
       socket.emit('join_customer_room', { userId });
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('❌ Socket connection error:', err.message);
     });
 
     // Server pushes this when an order status changes
     socket.on('new_notification', (notif) => {
+      console.log('🔔 New notification received:', notif);
       const meta     = NOTIFICATION_TYPES[notif.type] || {};
       const enriched = {
         ...notif,
@@ -66,7 +87,9 @@ export const NotificationProvider = ({ children, userId }) => {
       pushToast(enriched);
     });
 
-    socket.on('disconnect', () => console.log('🔕 Notification socket disconnected'));
+    socket.on('disconnect', (reason) => {
+      console.log('🔕 Notification socket disconnected:', reason);
+    });
 
     return () => {
       socket.emit('leave_customer_room', { userId });
@@ -93,7 +116,7 @@ export const NotificationProvider = ({ children, userId }) => {
     setToasts(prev => prev.filter(t => t.toastId !== toastId));
   }, []);
 
-  // ── Optimistic local notification (e.g., right when order is placed) ──────
+  // ── Optimistic local notification (called right when order is placed) ─────
   const addNotification = useCallback((type, { orderId, orderNumber, message, extra = {} }) => {
     const meta  = NOTIFICATION_TYPES[type] || {};
     const notif = {

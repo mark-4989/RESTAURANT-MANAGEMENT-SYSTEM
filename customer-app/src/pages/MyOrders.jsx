@@ -4,8 +4,10 @@ import { useUser } from '@clerk/clerk-react';
 import { MapPin, X, Navigation, Phone, Package, Clock, Radio, Truck } from 'lucide-react';
 import '../styles/MyOrders.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://restaurant-management-system-1-7v0m.onrender.com';
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://restaurant-management-system-1-7v0m.onrender.com';
+// Strip trailing /api if the env var includes it, so we never get /api/api/
+const _RAW_URL  = import.meta.env.VITE_API_URL || 'https://restaurant-management-system-1-7v0m.onrender.com';
+const API_URL   = _RAW_URL.replace(/\/api\/?$/, '');
+const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || 'https://restaurant-management-system-1-7v0m.onrender.com').replace(/\/api\/?$/, '');
 
 const MyOrders = () => {
   const { user } = useUser();
@@ -31,39 +33,40 @@ const MyOrders = () => {
 
     return () => {
       if (socketRef.current) {
-        socketRef.current.close();
+        socketRef.current.disconnect(); // Socket.IO uses disconnect(), not close()
       }
     };
   }, [user]);
 
   const initializeWebSocket = () => {
-    const wsUrl = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
-    socketRef.current = new WebSocket(wsUrl);
-    
-    socketRef.current.onopen = () => {
-      console.log('📡 Connected to tracking server');
-    };
+    // Your backend uses Socket.IO — raw WebSocket won't work with it
+    import('socket.io-client').then(({ io }) => {
+      const socket = io(BACKEND_URL, {
+        transports: ['websocket', 'polling'],
+        reconnectionAttempts: 5,
+        reconnectionDelay: 2000,
+      });
 
-    socketRef.current.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        
-        if (data.type === 'DRIVER_LOCATION_UPDATE' && trackingOrder && data.orderId === trackingOrder._id) {
+      socketRef.current = socket;
+
+      socket.on('connect', () => {
+        console.log('📡 Connected to tracking server');
+      });
+
+      socket.on('DRIVER_LOCATION_UPDATE', (data) => {
+        if (trackingOrder && data.orderId === trackingOrder._id) {
           setDriverLocation(data.location);
           updateDriverMarker(data.location);
         }
+      });
 
-        if (data.type === 'ORDER_STATUS_UPDATE' || data.type === 'DELIVERY_STATUS_UPDATE') {
-          fetchOrders();
-        }
-      } catch (error) {
-        console.error('WebSocket message error:', error);
-      }
-    };
+      socket.on('ORDER_STATUS_UPDATE',    () => fetchOrders());
+      socket.on('DELIVERY_STATUS_UPDATE', () => fetchOrders());
 
-    socketRef.current.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
+      socket.on('connect_error', (err) => {
+        console.error('📡 Socket connection error:', err.message);
+      });
+    }).catch(err => console.error('Socket.IO client error:', err));
   };
 
   const loadMapboxScript = () => {
@@ -311,11 +314,9 @@ const MyOrders = () => {
     if (driverMarkerRef.current) { driverMarkerRef.current.remove(); driverMarkerRef.current = null; }
     setTimeout(() => initializeMap(order), 100);
 
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify({
-        type: 'SUBSCRIBE_ORDER',
-        orderId: order._id
-      }));
+    // Socket.IO uses .emit() not .send()
+    if (socketRef.current && socketRef.current.connected) {
+      socketRef.current.emit('SUBSCRIBE_ORDER', { orderId: order._id });
     }
   };
 

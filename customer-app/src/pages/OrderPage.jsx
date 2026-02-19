@@ -9,7 +9,8 @@ import '../styles/orderpage.css';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
 // Fixed: removed trailing /api so it doesn't double up to /api/api/
-const API_URL = import.meta.env.VITE_API_URL || 'https://restaurant-management-system-1-7v0m.onrender.com';
+// Strip trailing /api if Vercel env var includes it — prevents /api/api/ double-prefix
+const API_URL = (import.meta.env.VITE_API_URL || 'https://restaurant-management-system-1-7v0m.onrender.com').replace(/\/api\/?$/, '');
 
 const OrderPage = () => {
   const { user } = useUser();
