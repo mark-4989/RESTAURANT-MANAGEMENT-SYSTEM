@@ -10,111 +10,15 @@ const {
   getOrderStats,
 } = require('../controllers/orderController');
 
-// Notification helpers
-const {
-  createAndEmitNotification,
-  STATUS_TO_TYPE,
-  getMessage,
-} = require('./notificationRoutes');
+// All notification logic lives in orderController.js now — clean and simple.
 
-// ── Existing order routes ─────────────────────────────────────────────────────
+// ── Routes ────────────────────────────────────────────────────────────────────
 router.get('/',        getAllOrders);
 router.get('/stats',   getOrderStats);
 router.get('/:id',     getOrder);
 router.delete('/:id',  deleteOrder);
-
-// ── POST / — create order ─────────────────────────────────────────────────────
-// Wraps the original createOrder controller, then fires ORDER_PLACED notification
-router.post('/', async (req, res, next) => {
-  const originalJson = res.json.bind(res);
-  let intercepted = false;
-
-  res.json = (body) => {
-    intercepted = true;
-
-    if (body?.success && body?.data?._id) {
-      const order       = body.data;
-      const recipientId = order.customerId;
-
-      if (recipientId) {
-        const io = req.app.get('io');
-        createAndEmitNotification(io, {
-          userId:      recipientId,
-          type:        'ORDER_PLACED',
-          orderId:     order._id,
-          orderNumber: order.orderNumber,
-          orderType:   order.orderType,
-          message:     getMessage('pending', order.orderNumber, order.orderType),
-        }).catch(err => console.error('[Notif] ORDER_PLACED error:', err.message));
-      } else {
-        console.log('[Notif] ORDER_PLACED skipped — no customerId on order:', order.orderNumber);
-      }
-    }
-
-    return originalJson(body);
-  };
-
-  await createOrder(req, res, next);
-});
-
-// ── PATCH /:id/status — update status ────────────────────────────────────────
-// Wraps the original updateOrderStatus controller, then fires status notification
-router.patch('/:id/status', async (req, res, next) => {
-  const Order = require('../models/Order');
-
-  // Read the order BEFORE the controller changes it so we know previousStatus
-  let previousStatus  = null;
-  let cachedOrderType = null;
-  let cachedCustomerId = null;
-  try {
-    const existing = await Order.findById(req.params.id).select('status customerId orderNumber orderType');
-    if (existing) {
-      previousStatus   = existing.status;
-      cachedOrderType  = existing.orderType;
-      cachedCustomerId = existing.customerId; // cache BEFORE update
-    }
-  } catch (_) {}
-
-  const originalJson = res.json.bind(res);
-
-  res.json = (body) => {
-    if (body?.success && body?.data) {
-      const order     = body.data;
-      const newStatus = order.status;
-      // Use customerId from the freshly returned order, OR fall back to pre-cached value
-      const recipientId = order.customerId || cachedCustomerId;
-      const orderType   = order.orderType  || cachedOrderType;
-
-      console.log(`[Notif] Status change: ${previousStatus} → ${newStatus} | customerId: ${recipientId} | orderType: ${orderType}`);
-
-      if (newStatus !== previousStatus) {
-        const notifType = STATUS_TO_TYPE[newStatus];
-
-        if (notifType && recipientId) {
-          // Use req.app.get('io') first, fall back to getIo() from socketService
-          const { getIo } = require('../services/socketService');
-          const io = req.app.get('io') || getIo();
-          createAndEmitNotification(io, {
-            userId:      recipientId,
-            type:        notifType,
-            orderId:     order._id,
-            orderNumber: order.orderNumber,
-            orderType,
-            message:     getMessage(newStatus, order.orderNumber, orderType),
-          }).catch(err => console.error('[Notif] status emit error:', err.message));
-
-          console.log(`[Notif] ✅ Fired ${notifType} → customer_${recipientId} (${orderType})`);
-        } else {
-          console.warn(`[Notif] ⚠️ Skipped — notifType:${notifType} recipientId:${recipientId}`);
-        }
-      }
-    }
-
-    return originalJson(body);
-  };
-
-  await updateOrderStatus(req, res, next);
-});
+router.post('/',             createOrder);
+router.patch('/:id/status',  updateOrderStatus);
 
 // ── PUT /:id/assign-driver ────────────────────────────────────────────────────
 router.put('/:id/assign-driver', async (req, res) => {
