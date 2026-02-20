@@ -10,40 +10,10 @@ const _RAW_URL  = import.meta.env.VITE_API_URL || 'https://restaurant-management
 const API_URL   = _RAW_URL.replace(/\/api\/?$/, '');
 const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || 'https://restaurant-management-system-1-7v0m.onrender.com').replace(/\/api\/?$/, '');
 
-// ── Notification messages per status (mirrors backend getMessage) ─────────────
-const STATUS_MESSAGES = {
-  confirmed: (n, t) => ({
-    delivery:  `Great news! Your delivery order #${n} is confirmed and queued for the kitchen. 🙌`,
-    pickup:    `Your pickup order #${n} is confirmed! We'll let you know when it's ready. 🙌`,
-    'dine-in': `Your dine-in order #${n} is confirmed! Our team is on it. 😊`,
-    preorder:  `Your pre-order #${n} is confirmed! We'll start preparing at the right time. ⏰`,
-  }[t] || `Your order #${n} has been confirmed! 🙌`,
-  preparing: (n) => `Our chef is now preparing your order #${n} with love and care. 🔥`,
-  ready: (n, t) => ({
-    delivery:  `Your order #${n} is packed and ready — the driver will pick it up shortly! 🚚`,
-    pickup:    `Your order #${n} is hot and ready for pickup! Come grab it while it's fresh. 🍽️`,
-    'dine-in': `Your order #${n} is on its way to your table right now! Enjoy. 🍽️`,
-    preorder:  `Your pre-order #${n} is ready! 🎉`,
-  }[t] || `Your order #${n} is ready! 🍽️`,
-  completed: (n) => `Your order #${n} is complete. Thank you for dining with us! ⭐`,
-  cancelled: (n) => `Your order #${n} has been cancelled. Contact us if you need help. 💙`,
-  'on-the-way': (n) => `Your order #${n} is on its way — the driver is heading to you now! 🚚`,
-  delivered:    (n) => `Your order #${n} has arrived! Bon appétit! 🏠❤️`,
-};
-
-// Map kitchen status → notification type
-const STATUS_TO_TYPE = {
-  confirmed:    'ORDER_CONFIRMED',
-  preparing:    'PREPARING',
-  ready:        'READY',
-  completed:    'DELIVERED',
-  cancelled:    'CANCELLED',
-};
-
 const MyOrders = () => {
   const { user } = useUser();
-  // NotificationContext handles ALL socket-based notifications — we just use
-  // addNotification here for the polling-based status change fallback.
+  // NotificationContext handles all real-time notifications via socket.
+  // addNotification kept here only if needed for manual triggers in future.
   const { addNotification } = useNotifications();
 
   const [orders, setOrders] = useState([]);
@@ -58,9 +28,6 @@ const MyOrders = () => {
   const destinationMarkerRef = useRef(null);
   const socketRef = useRef(null);
   const driverTrailRef = useRef([]);
-
-  // tracks last-known status of each order so we only notify on changes
-  const prevStatusRef = useRef({});
 
   useEffect(() => {
     if (user) {
@@ -87,10 +54,7 @@ const MyOrders = () => {
       socketRef.current = socket;
 
       socket.on('connect', () => {
-        console.log('📡 MyOrders tracking socket connected');
-        // NOTE: we do NOT join customer_room here — NotificationContext handles
-        // that on its own dedicated socket. This socket is ONLY for tracking
-        // ORDER_STATUS_UPDATE broadcasts to refresh the orders list.
+        console.log('📡 Connected to tracking server');
       });
 
       socket.on('DRIVER_LOCATION_UPDATE', (data) => {
@@ -100,10 +64,9 @@ const MyOrders = () => {
         }
       });
 
-      // When kitchen updates an order, re-fetch — this keeps the status badge
-      // on the orders list current. Notifications come via NotificationContext.
+      // When kitchen updates an order, re-fetch orders — the comparison
+      // logic in fetchOrders will detect status changes and fire notifications.
       socket.on('ORDER_STATUS_UPDATE',    () => fetchOrders());
-      socket.on('orderStatusUpdated',     () => fetchOrders()); // alt event name
       socket.on('DELIVERY_STATUS_UPDATE', () => fetchOrders());
 
       socket.on('connect_error', (err) => {
@@ -140,6 +103,8 @@ const MyOrders = () => {
         const sortedOrders = data.data.sort((a, b) => 
           new Date(b.createdAt) - new Date(a.createdAt)
         );
+        // Notifications come via NotificationContext socket (new_notification event).
+        // fetchOrders just keeps the orders list visually up to date.
         setOrders(sortedOrders);
       }
     } catch (error) {
