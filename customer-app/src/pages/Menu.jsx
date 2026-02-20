@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
 import { useUser } from '@clerk/clerk-react';
 import { useTable } from '../context/TableContext';
 import { menuCategories, formatPrice } from '../data/menuData';
 import { getAllMenuItems, seedMenuItems } from '../api/menuApi';
 import { createOrder } from '../api/orderApi';
+import { useNotifications } from '../context/NotificationContext';
 import { Search, ShoppingCart, MapPin, Edit2, X, Plus, Minus, Trash2, Utensils } from 'lucide-react';
 import menuBgLeft from '../assets/menu-bg-left.png';
 import menuBgRight from '../assets/menu-bg-right.png';
@@ -13,6 +13,14 @@ import '../styles/menu.css';
 const Menu = () => {
   const { user } = useUser();
   const { tableNumber, setTableNumber } = useTable();
+  const { addNotification } = useNotifications();
+
+  // Simple in-component toast — replaces react-toastify (not installed on Vercel)
+  const [toastMsg, setToastMsg] = useState(null);
+  const showToast = (msg, type = 'success') => {
+    setToastMsg({ msg, type });
+    setTimeout(() => setToastMsg(null), 3500);
+  };
   
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,27 +55,26 @@ const Menu = () => {
   const handleSeedDatabase = async () => {
     const result = await seedMenuItems();
     if (result.success) {
-      toast.success(`✅ Added ${result.count} menu items!`);
+      showToast(`✅ Added ${result.count} menu items!`);
       fetchMenuItems();
     } else {
-      toast.error(`❌ Error: ${result.error}`);
+      showToast(`❌ Error: ${result.error}`, 'error');
     }
   };
 
   // Add item to cart
   const addToCart = (item) => {
     const existingItem = cart.find(cartItem => cartItem._id === item._id);
-    
     if (existingItem) {
       setCart(cart.map(cartItem =>
         cartItem._id === item._id
           ? { ...cartItem, quantity: cartItem.quantity + 1 }
           : cartItem
       ));
-      toast.success(`Added another ${item.name}!`);
+      showToast(`Added another ${item.name}!`);
     } else {
       setCart([...cart, { ...item, quantity: 1 }]);
-      toast.success(`${item.name} added to cart!`);
+      showToast(`${item.name} added to cart!`);
     }
   };
 
@@ -85,7 +92,7 @@ const Menu = () => {
   // Remove item
   const removeItem = (itemId) => {
     setCart(cart.filter(item => item._id !== itemId));
-    toast.info('Item removed from cart');
+    showToast('Item removed from cart', 'info');
   };
 
   // Calculate total
@@ -95,13 +102,11 @@ const Menu = () => {
   // Handle checkout
   const handleCheckout = async () => {
     if (cart.length === 0) {
-      toast.warning('Cart is empty!');
+      showToast('Cart is empty!', 'warning');
       return;
     }
 
-    // Get table number - use context or prompt
     let finalTableNumber = tableNumber;
-    
     if (!finalTableNumber) {
       const inputTable = prompt('Enter table number (or type "Takeaway"):');
       if (inputTable) {
@@ -112,28 +117,32 @@ const Menu = () => {
       }
     }
 
-    // Get customer name from Clerk or prompt
-    const customerName = user?.fullName || user?.firstName || prompt('Enter your name:') || 'Guest';
+    const customerName  = user?.fullName || user?.firstName || prompt('Enter your name:') || 'Guest';
+    const customerId    = user?.id || null; // ← Clerk user ID for notifications
+    const customerEmail = user?.primaryEmailAddress?.emailAddress || '';
+    const orderType     = finalTableNumber === 'Takeaway' ? 'pickup' : 'dine-in';
 
     const subtotal = Math.round(cartTotal);
-    const tax = Math.round(cartTotal * 0.16);
-    const total = subtotal + tax;
+    const tax      = Math.round(cartTotal * 0.16);
+    const total    = subtotal + tax;
 
     const orderData = {
       tableNumber: finalTableNumber,
       customerName,
+      customerEmail,
+      customerId,   // ← was missing — this is why notifications were silently skipped
       items: cart.map(item => ({
         menuItem: item._id,
-        name: item.name,
+        name:     item.name,
         quantity: item.quantity,
-        price: item.price,
+        price:    item.price,
       })),
       subtotal,
       tax,
       total,
-      orderType: finalTableNumber === 'Takeaway' ? 'takeaway' : 'dine-in',
+      orderType,
       paymentStatus: 'pending',
-      status: 'pending',
+      status:        'pending',
     };
 
     console.log('📦 Creating order:', orderData);
@@ -141,19 +150,21 @@ const Menu = () => {
     const result = await createOrder(orderData);
 
     if (result.success) {
-      toast.success(`✅ Order ${result.data.orderNumber} created for Table ${finalTableNumber}!`, {
-        autoClose: 5000
+      const orderNumber = result.data.orderNumber;
+      showToast(`✅ Order ${orderNumber} placed for Table ${finalTableNumber}!`);
+
+      // Instant local notification — shows toast + updates bell badge immediately
+      // Backend socket notification will also arrive shortly after
+      addNotification('ORDER_PLACED', {
+        orderId:     result.data._id,
+        orderNumber,
+        orderType,
       });
+
       setCart([]);
       setIsCartOpen(false);
-      
-      setTimeout(() => {
-        if (window.confirm('Order placed successfully! View your orders?')) {
-          console.log('Navigate to My Orders');
-        }
-      }, 1000);
     } else {
-      toast.error(`❌ Error: ${result.error}`);
+      showToast(`❌ Error: ${result.error}`, 'error');
     }
   };
 
@@ -172,6 +183,20 @@ const Menu = () => {
 
   return (
     <div className="menu-page">
+      {/* Inline toast — replaces react-toastify */}
+      {toastMsg && (
+        <div style={{
+          position: 'fixed', bottom: '5rem', left: '50%', transform: 'translateX(-50%)',
+          background: toastMsg.type === 'error' ? '#ef4444' : toastMsg.type === 'warning' ? '#f59e0b' : toastMsg.type === 'info' ? '#3b82f6' : '#10b981',
+          color: '#fff', padding: '0.75rem 1.5rem', borderRadius: '100px',
+          fontWeight: 600, fontSize: '0.9rem', zIndex: 9999,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)', whiteSpace: 'nowrap',
+          animation: 'fadeup 0.25s ease',
+        }}>
+          {toastMsg.msg}
+        </div>
+      )}
+      <style>{`@keyframes fadeup { from { opacity:0; transform:translateX(-50%) translateY(10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }`}</style>
       {/* Background Images - Using imported assets */}
       <div 
         className="menu-bg-left" 
