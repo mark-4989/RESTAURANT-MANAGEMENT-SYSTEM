@@ -42,7 +42,9 @@ const STATUS_TO_TYPE = {
 
 const MyOrders = () => {
   const { user } = useUser();
-  const { addNotification } = useNotifications(); // ← NEW
+  // NotificationContext handles ALL socket-based notifications — we just use
+  // addNotification here for the polling-based status change fallback.
+  const { addNotification } = useNotifications();
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,8 +59,8 @@ const MyOrders = () => {
   const socketRef = useRef(null);
   const driverTrailRef = useRef([]);
 
-  // ← NEW: tracks last-known status of each order so we only notify on changes
-  const prevStatusRef = useRef({}); // { [orderId]: { status, deliveryStatus } }
+  // tracks last-known status of each order so we only notify on changes
+  const prevStatusRef = useRef({});
 
   useEffect(() => {
     if (user) {
@@ -85,7 +87,10 @@ const MyOrders = () => {
       socketRef.current = socket;
 
       socket.on('connect', () => {
-        console.log('📡 Connected to tracking server');
+        console.log('📡 MyOrders tracking socket connected');
+        // NOTE: we do NOT join customer_room here — NotificationContext handles
+        // that on its own dedicated socket. This socket is ONLY for tracking
+        // ORDER_STATUS_UPDATE broadcasts to refresh the orders list.
       });
 
       socket.on('DRIVER_LOCATION_UPDATE', (data) => {
@@ -95,9 +100,10 @@ const MyOrders = () => {
         }
       });
 
-      // When kitchen updates an order, re-fetch orders — the comparison
-      // logic in fetchOrders will detect status changes and fire notifications.
+      // When kitchen updates an order, re-fetch — this keeps the status badge
+      // on the orders list current. Notifications come via NotificationContext.
       socket.on('ORDER_STATUS_UPDATE',    () => fetchOrders());
+      socket.on('orderStatusUpdated',     () => fetchOrders()); // alt event name
       socket.on('DELIVERY_STATUS_UPDATE', () => fetchOrders());
 
       socket.on('connect_error', (err) => {
@@ -134,54 +140,6 @@ const MyOrders = () => {
         const sortedOrders = data.data.sort((a, b) => 
           new Date(b.createdAt) - new Date(a.createdAt)
         );
-
-        // ── NEW: compare each order's status against what we saw last time ──────
-        // isFirstLoad = true on the very first fetch — just snapshot, no notifications.
-        // On every subsequent fetch, compare and fire a notification for each change.
-        const prev = prevStatusRef.current;
-        const isFirstLoad = Object.keys(prev).length === 0;
-
-        sortedOrders.forEach(order => {
-          const id = order._id;
-          const newStatus      = order.status;
-          const newDelivStatus = order.deliveryStatus;
-          const orderNum       = order.orderNumber;
-          const orderType      = order.orderType;
-
-          if (!isFirstLoad) {
-            // Kitchen status changed
-            if (prev[id] && prev[id].status !== newStatus) {
-              const notifType = STATUS_TO_TYPE[newStatus];
-              const msgFn     = STATUS_MESSAGES[newStatus];
-              if (notifType && msgFn) {
-                addNotification(notifType, {
-                  orderId:     id,
-                  orderNumber: orderNum,
-                  orderType,
-                  message: msgFn(orderNum, orderType),
-                });
-              }
-            }
-
-            // Delivery status changed (on-the-way / delivered)
-            if (prev[id] && prev[id].deliveryStatus !== newDelivStatus) {
-              const msgFn = STATUS_MESSAGES[newDelivStatus];
-              if (msgFn) {
-                const type = newDelivStatus === 'delivered' ? 'DELIVERED' : 'ON_THE_WAY';
-                addNotification(type, {
-                  orderId:     id,
-                  orderNumber: orderNum,
-                  orderType,
-                  message: msgFn(orderNum, orderType),
-                });
-              }
-            }
-          }
-
-          // Always update the snapshot
-          prev[id] = { status: newStatus, deliveryStatus: newDelivStatus };
-        });
-
         setOrders(sortedOrders);
       }
     } catch (error) {
