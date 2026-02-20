@@ -118,21 +118,28 @@ exports.updateOrderStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid status value' });
     }
 
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
-
-    order.status = status;
-
-    // Record timestamps
-    if (status === 'confirmed')  order.confirmedAt  = new Date();
-    if (status === 'preparing')  order.preparingAt  = new Date();
-    if (status === 'ready')      order.readyAt      = new Date();
+    // Build update object
+    const updateFields = { status };
+    if (status === 'confirmed')  updateFields.confirmedAt  = new Date();
+    if (status === 'preparing')  updateFields.preparingAt  = new Date();
+    if (status === 'ready')      updateFields.readyAt      = new Date();
     if (status === 'completed') {
-      order.completedAt   = new Date();
-      order.paymentStatus = 'paid';
+      updateFields.completedAt   = new Date();
+      updateFields.paymentStatus = 'paid';
     }
 
-    await order.save();
+    // KEY FIX: use findByIdAndUpdate with { new: true } so the returned document
+    // is a fresh read from MongoDB — guarantees customerId, orderType, and all
+    // fields are present. Previously .save() returned the in-memory document
+    // which could have stale/missing fields causing the notification interceptor
+    // in orderRoutes.js to see customerId as null and silently skip the notif.
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateFields },
+      { new: true, runValidators: true }
+    );
+
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
     // Emit real-time update to kitchen/admin displays
     emitOrderStatusUpdate(order);

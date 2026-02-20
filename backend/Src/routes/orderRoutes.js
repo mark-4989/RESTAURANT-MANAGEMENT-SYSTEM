@@ -65,11 +65,13 @@ router.patch('/:id/status', async (req, res, next) => {
   // Read the order BEFORE the controller changes it so we know previousStatus
   let previousStatus  = null;
   let cachedOrderType = null;
+  let cachedCustomerId = null;
   try {
     const existing = await Order.findById(req.params.id).select('status customerId orderNumber orderType');
     if (existing) {
-      previousStatus  = existing.status;
-      cachedOrderType = existing.orderType;
+      previousStatus   = existing.status;
+      cachedOrderType  = existing.orderType;
+      cachedCustomerId = existing.customerId; // cache BEFORE update
     }
   } catch (_) {}
 
@@ -77,16 +79,21 @@ router.patch('/:id/status', async (req, res, next) => {
 
   res.json = (body) => {
     if (body?.success && body?.data) {
-      const order       = body.data;
-      const newStatus   = order.status;
-      const recipientId = order.customerId;
-      const orderType   = order.orderType || cachedOrderType;
+      const order     = body.data;
+      const newStatus = order.status;
+      // Use customerId from the freshly returned order, OR fall back to pre-cached value
+      const recipientId = order.customerId || cachedCustomerId;
+      const orderType   = order.orderType  || cachedOrderType;
+
+      console.log(`[Notif] Status change: ${previousStatus} → ${newStatus} | customerId: ${recipientId} | orderType: ${orderType}`);
 
       if (newStatus !== previousStatus) {
         const notifType = STATUS_TO_TYPE[newStatus];
 
         if (notifType && recipientId) {
-          const io = req.app.get('io');
+          // Use req.app.get('io') first, fall back to getIo() from socketService
+          const { getIo } = require('../services/socketService');
+          const io = req.app.get('io') || getIo();
           createAndEmitNotification(io, {
             userId:      recipientId,
             type:        notifType,
@@ -96,14 +103,9 @@ router.patch('/:id/status', async (req, res, next) => {
             message:     getMessage(newStatus, order.orderNumber, orderType),
           }).catch(err => console.error('[Notif] status emit error:', err.message));
 
-          console.log(`[Notif] ✅ Sent ${notifType} to customer_${recipientId} (${orderType})`);
+          console.log(`[Notif] ✅ Fired ${notifType} → customer_${recipientId} (${orderType})`);
         } else {
-          console.log('[Notif] Skipped status notification:', {
-            newStatus,
-            notifType,
-            recipientId,
-            hasMessage: !!getMessage,
-          });
+          console.warn(`[Notif] ⚠️ Skipped — notifType:${notifType} recipientId:${recipientId}`);
         }
       }
     }
