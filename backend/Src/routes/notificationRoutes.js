@@ -125,18 +125,16 @@ router.delete('/clear/:userId', async (req, res) => {
 });
 
 // ── POST /api/notifications/test/:userId ─────────────────────────────────────
-// Use this to verify the full pipeline end-to-end before placing a real order.
-// Example: POST https://restaurant-management-system-1-7v0m.onrender.com/api/notifications/test/YOUR_CLERK_USER_ID
 router.post('/test/:userId', async (req, res) => {
   try {
     const io = req.app.get('io');
     const notif = await createAndEmitNotification(io, {
       userId:      req.params.userId,
       type:        'ORDER_PLACED',
-      orderId:     'test_order_id',
+      orderId:     null,          // ← was 'test_order_id' which failed ObjectId cast
       orderNumber: 'ORD-TEST',
       orderType:   'pickup',
-      message:     '🧪 Test notification! If you see this on the Notifications page, the full pipeline is working.',
+      message:     '🧪 Test notification! If you see this, the full socket pipeline is working.',
     });
     res.json({ success: true, message: 'Test notification sent', data: notif });
   } catch (err) {

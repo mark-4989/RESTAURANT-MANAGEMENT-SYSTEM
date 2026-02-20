@@ -10,15 +10,116 @@ const {
   getOrderStats,
 } = require('../controllers/orderController');
 
-// All notification logic lives in orderController.js now — clean and simple.
+// Notification helpers
+const {
+  createAndEmitNotification,
+  STATUS_TO_TYPE,
+  getMessage,
+} = require('./notificationRoutes');
 
-// ── Routes ────────────────────────────────────────────────────────────────────
+// ── Existing order routes ─────────────────────────────────────────────────────
 router.get('/',        getAllOrders);
 router.get('/stats',   getOrderStats);
 router.get('/:id',     getOrder);
 router.delete('/:id',  deleteOrder);
-router.post('/',             createOrder);
-router.patch('/:id/status',  updateOrderStatus);
+
+// ── POST / — create order ─────────────────────────────────────────────────────
+router.post('/', async (req, res, next) => {
+  // Read customerId from request body BEFORE the controller touches it.
+  // This is the most reliable source — straight from the customer app.
+  const incomingCustomerId = req.body.customerId || null;
+  const incomingOrderType  = req.body.orderType  || 'pickup';
+  console.log(`[Notif] POST /orders — incoming customerId: ${incomingCustomerId}, orderType: ${incomingOrderType}`);
+
+  const originalJson = res.json.bind(res);
+
+  res.json = (body) => {
+    if (body?.success && body?.data?._id) {
+      const order = body.data;
+      // Prefer the cached value from req.body — doesn't depend on mongoose serialization
+      const recipientId = incomingCustomerId || order.customerId;
+      console.log(`[Notif] ORDER_PLACED resolved customerId: ${recipientId}`);
+
+      if (recipientId) {
+        const { getIo } = require('../services/socketService');
+        const io = req.app.get('io') || getIo();
+        createAndEmitNotification(io, {
+          userId:      recipientId,
+          type:        'ORDER_PLACED',
+          orderId:     order._id,
+          orderNumber: order.orderNumber,
+          orderType:   incomingOrderType,
+          message:     getMessage('pending', order.orderNumber, incomingOrderType),
+        }).catch(err => console.error('[Notif] ORDER_PLACED error:', err.message));
+      } else {
+        console.warn('[Notif] ⚠️ ORDER_PLACED skipped — customerId was null in both req.body and response. User may not have been logged in.');
+      }
+    }
+    return originalJson(body);
+  };
+
+  await createOrder(req, res, next);
+});
+
+// ── PATCH /:id/status — update status ────────────────────────────────────────
+router.patch('/:id/status', async (req, res, next) => {
+  const Order = require('../models/Order');
+
+  let previousStatus   = null;
+  let cachedOrderType  = null;
+  let cachedCustomerId = null;
+  let cachedOrderNum   = null;
+  try {
+    const existing = await Order.findById(req.params.id)
+      .select('status customerId orderNumber orderType');
+    if (existing) {
+      previousStatus   = existing.status;
+      cachedOrderType  = existing.orderType;
+      cachedCustomerId = existing.customerId;
+      cachedOrderNum   = existing.orderNumber;
+    }
+    console.log(`[Notif] PATCH pre-read: status=${previousStatus} customerId=${cachedCustomerId} orderType=${cachedOrderType}`);
+  } catch (e) {
+    console.error('[Notif] Pre-read failed:', e.message);
+  }
+
+  const originalJson = res.json.bind(res);
+
+  res.json = (body) => {
+    if (body?.success) {
+      const order       = body.data || {};
+      const newStatus   = order.status || req.body.status;
+      const recipientId = cachedCustomerId || order.customerId;
+      const orderType   = cachedOrderType  || order.orderType;
+      const orderNum    = cachedOrderNum   || order.orderNumber;
+
+      console.log(`[Notif] PATCH intercept: ${previousStatus}→${newStatus} customerId=${recipientId}`);
+
+      if (newStatus && newStatus !== previousStatus) {
+        const notifType = STATUS_TO_TYPE[newStatus];
+
+        if (notifType && recipientId) {
+          const { getIo } = require('../services/socketService');
+          const io = req.app.get('io') || getIo();
+          createAndEmitNotification(io, {
+            userId:      recipientId,
+            type:        notifType,
+            orderId:     order._id,
+            orderNumber: orderNum,
+            orderType,
+            message:     getMessage(newStatus, orderNum, orderType),
+          }).catch(err => console.error('[Notif] emit error:', err.message));
+          console.log(`[Notif] ✅ Queued ${notifType} → customer_${recipientId}`);
+        } else {
+          console.warn(`[Notif] ⚠️ Skipped — notifType:${notifType} customerId:${recipientId}`);
+        }
+      }
+    }
+    return originalJson(body);
+  };
+
+  await updateOrderStatus(req, res, next);
+});
 
 // ── PUT /:id/assign-driver ────────────────────────────────────────────────────
 router.put('/:id/assign-driver', async (req, res) => {
