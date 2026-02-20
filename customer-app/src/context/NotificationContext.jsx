@@ -1,4 +1,4 @@
-\// customer-app/src/context/NotificationContext.jsx — COMPLETE FILE
+// customer-app/src/context/NotificationContext.jsx — COMPLETE FILE
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 
