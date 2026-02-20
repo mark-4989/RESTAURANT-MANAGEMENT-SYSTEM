@@ -35,33 +35,32 @@ exports.createOrder = async (req, res) => {
     const order = await Order.create(orderData);
     console.log('✅ Order created successfully:', orderNumber);
 
+    // ── If customerId wasn't sent (older Cart.jsx), recover it from a previous
+    // order by the same customerName. Patch the saved order in place.
+    if (!order.customerId && order.customerName) {
+      try {
+        const previous = await Order.findOne({
+          customerName: order.customerName,
+          customerId:   { $ne: null },
+        }).select('customerId').sort({ createdAt: -1 });
+
+        if (previous?.customerId) {
+          order.customerId = previous.customerId;
+          await Order.findByIdAndUpdate(order._id, { customerId: previous.customerId });
+          console.log(`[Notif] 🔧 Recovered customerId ${previous.customerId} for ${order.customerName}`);
+        } else {
+          console.log(`[Notif] ⚠️ No previous order found for customerName: ${order.customerName}`);
+        }
+      } catch (e) {
+        console.error('[Notif] customerId recovery failed:', e.message);
+      }
+    }
+
     // Emit to kitchen/admin displays
     emitNewOrder(order);
 
-    // ── Fire ORDER_PLACED notification directly ───────────────────────────────
-    if (order.customerId) {
-      try {
-        const { createAndEmitNotification } = require('../routes/notificationRoutes');
-        const io = req.app.get('io');
-        const orderTypeLabel = order.orderType === 'delivery' ? 'delivery order'
-                             : order.orderType === 'dine-in'  ? 'dine-in order'
-                             : order.orderType === 'preorder' ? 'pre-order'
-                             :                                  'pickup order';
-        await createAndEmitNotification(io, {
-          userId:      order.customerId,
-          type:        'ORDER_PLACED',
-          orderId:     order._id,
-          orderNumber: order.orderNumber,
-          orderType:   order.orderType,
-          message:     `Your ${orderTypeLabel} #${order.orderNumber} has been placed! We're on it. 🧾`,
-        });
-        console.log(`[Notif] ✅ ORDER_PLACED sent → customer_${order.customerId}`);
-      } catch (notifErr) {
-        console.error('[Notif] ❌ ORDER_PLACED notification failed:', notifErr.message);
-      }
-    } else {
-      console.log('[Notif] ⚠️ ORDER_PLACED skipped — no customerId on order:', orderNumber);
-    }
+    // NOTE: Customer ORDER_PLACED notification is handled by the res.json
+    // interceptor in orderRoutes.js — no call needed here.
 
     // Update staff performance
     if (order.createdBy) {
@@ -129,33 +128,8 @@ exports.getOrder = async (req, res) => {
   }
 };
 
-// ── Status → notification type ────────────────────────────────────────────────
-const STATUS_TO_NOTIF_TYPE = {
-  confirmed: 'ORDER_CONFIRMED',
-  preparing: 'PREPARING',
-  ready:     'READY',
-  completed: 'DELIVERED',
-  cancelled: 'CANCELLED',
-};
-
-// ── Warm messages per status + orderType ──────────────────────────────────────
-const getStatusMessage = (status, orderNumber, orderType) => {
-  const n = orderNumber;
-  const t = orderType;
-  const map = {
-    confirmed: `Great news! Your order #${n} is confirmed and queued for the kitchen. 🙌`,
-    preparing: `Our chef is now preparing your order #${n} with love and care. 🔥`,
-    ready: t === 'delivery'  ? `Your order #${n} is packed and ready — driver picks up shortly! 🚚`
-         : t === 'dine-in'   ? `Your order #${n} is on its way to your table! Enjoy. 🍽️`
-         : t === 'preorder'  ? `Your pre-order #${n} is ready! Please collect it. 🎉`
-         :                     `Your order #${n} is hot and ready for pickup! 🍽️`,
-    completed: `Your order #${n} is complete. Thank you for dining with us! ⭐`,
-    cancelled: `Your order #${n} has been cancelled. Contact us if you need help. 💙`,
-  };
-  return map[status] || `Update on your order #${n}`;
-};
-
 // ── Update order status ───────────────────────────────────────────────────────
+// This is called by: KitchenDisplay "Start Cooking" / "Mark Ready" / "Bump"
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -165,63 +139,27 @@ exports.updateOrderStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid status value' });
     }
 
-    // Read BEFORE update so we know previousStatus for change detection
-    const before = await Order.findById(req.params.id).select('status customerId orderNumber orderType');
-    if (!before) return res.status(404).json({ success: false, message: 'Order not found' });
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
-    const previousStatus = before.status;
+    order.status = status;
 
-    // Build update fields
-    const updateFields = { status };
-    if (status === 'confirmed') updateFields.confirmedAt  = new Date();
-    if (status === 'preparing') updateFields.preparingAt  = new Date();
-    if (status === 'ready')     updateFields.readyAt      = new Date();
+    // Record timestamps
+    if (status === 'confirmed')  order.confirmedAt  = new Date();
+    if (status === 'preparing')  order.preparingAt  = new Date();
+    if (status === 'ready')      order.readyAt      = new Date();
     if (status === 'completed') {
-      updateFields.completedAt   = new Date();
-      updateFields.paymentStatus = 'paid';
+      order.completedAt   = new Date();
+      order.paymentStatus = 'paid';
     }
 
-    // findByIdAndUpdate with { new: true } returns a fresh DB read —
-    // guarantees customerId and orderType are fully populated on the result.
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      { $set: updateFields },
-      { new: true }
-    );
+    await order.save();
 
     // Emit real-time update to kitchen/admin displays
     emitOrderStatusUpdate(order);
 
-    // ── Fire customer notification directly here — no intercept needed ──────────
-    // This is simpler and more reliable than the res.json intercept approach.
-    if (status !== previousStatus) {
-      const notifType   = STATUS_TO_NOTIF_TYPE[status];
-      const customerId  = order.customerId || before.customerId; // belt + suspenders
-      const orderType   = order.orderType  || before.orderType;
-
-      console.log(`[Notif] Status: ${previousStatus} → ${status} | customerId: ${customerId} | orderType: ${orderType}`);
-
-      if (notifType && customerId) {
-        try {
-          const { createAndEmitNotification } = require('../routes/notificationRoutes');
-          const io = req.app.get('io');
-          await createAndEmitNotification(io, {
-            userId:      customerId,
-            type:        notifType,
-            orderId:     order._id,
-            orderNumber: order.orderNumber,
-            orderType,
-            message:     getStatusMessage(status, order.orderNumber, orderType),
-          });
-          console.log(`[Notif] ✅ Sent ${notifType} → customer_${customerId}`);
-        } catch (notifErr) {
-          // Never let a notification error kill the order update response
-          console.error('[Notif] ❌ Failed to send notification:', notifErr.message);
-        }
-      } else {
-        console.log(`[Notif] ⚠️ Skipped — notifType:${notifType} customerId:${customerId}`);
-      }
-    }
+    // NOTE: Customer status notification is handled by the res.json interceptor
+    // in orderRoutes.js — no call needed here.
 
     res.status(200).json({
       success: true,
