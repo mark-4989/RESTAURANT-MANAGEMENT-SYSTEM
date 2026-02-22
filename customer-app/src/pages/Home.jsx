@@ -1,279 +1,215 @@
 import React, { useEffect, useRef } from 'react';
 import { useTable } from '../context/TableContext';
-import { Utensils, Package, ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Star } from 'lucide-react';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import foodLeft from '../assets/food-left.png';
 import foodRight from '../assets/food-right.png';
 import '../styles/home.css';
 
-// Register GSAP plugins
-gsap.registerPlugin(ScrollTrigger);
-
 const Home = ({ onNavigate }) => {
   const { tableNumber, setTableNumber } = useTable();
-  
-  // Refs for GSAP animations
-  const heroRef = useRef(null);
-  const titleRef = useRef(null);
-  const subtitleRef = useRef(null);
-  const buttonsRef = useRef(null);
-  const badgeRef = useRef(null);
-  const foodLeftRef = useRef(null);
-  const foodRightRef = useRef(null);
-  const qrSectionRef = useRef(null);
 
+  const containerRef  = useRef(null);
+  const eyebrowRef    = useRef(null);
+  const titleLine1Ref = useRef(null);
+  const titleLine2Ref = useRef(null);
+  const titleLine3Ref = useRef(null);
+  const subtitleRef   = useRef(null);
+  const ctaRef        = useRef(null);
+  const statsRef      = useRef(null);
+  const badgeRef      = useRef(null);
+  const imgRef        = useRef(null);
+  const decorRef      = useRef(null);
+
+  /* ─── QR param ─── */
   useEffect(() => {
-    // Get table number from URL query parameter (from QR code scan)
-    const urlParams = new URLSearchParams(window.location.search);
-    const tableFromURL = urlParams.get('table');
-    
-    if (tableFromURL) {
-      console.log('📱 QR Code Scanned! Table:', tableFromURL);
-      setTableNumber(tableFromURL);
-      showWelcomeToast(tableFromURL);
+    const p = new URLSearchParams(window.location.search);
+    const t = p.get('table');
+    if (t) {
+      setTableNumber(t);
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, [setTableNumber]);
 
+  /* ─── GSAP entrance ─── */
   useEffect(() => {
-    // GSAP Animation Timeline
     const ctx = gsap.context(() => {
-      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+      const tl = gsap.timeline({ defaults: { ease: 'power4.out' } });
 
-      // Animate hero content
-      tl.from(titleRef.current, {
-        y: 100,
-        opacity: 0,
-        duration: 1,
-        scale: 0.8,
+      // image slides in from right
+      tl.from(imgRef.current, {
+        x: 120, opacity: 0, duration: 1.2, ease: 'expo.out'
       })
+      // decor orbs
+      .from(decorRef.current, {
+        scale: 0, opacity: 0, duration: 1, ease: 'back.out(1.4)'
+      }, '-=0.8')
+      // eyebrow
+      .from(eyebrowRef.current, {
+        y: 24, opacity: 0, duration: 0.6
+      }, '-=0.6')
+      // headline lines staggered
+      .from([titleLine1Ref.current, titleLine2Ref.current, titleLine3Ref.current], {
+        y: 80, opacity: 0, duration: 0.9, stagger: 0.12, ease: 'expo.out'
+      }, '-=0.3')
       .from(subtitleRef.current, {
-        y: 50,
-        opacity: 0,
-        duration: 0.8,
-      }, '-=0.5')
-      .from(buttonsRef.current.children, {
-        y: 30,
-        opacity: 0,
-        duration: 0.6,
-        stagger: 0.2,
-        scale: 0.9,
-      }, '-=0.4');
+        y: 20, opacity: 0, duration: 0.6
+      }, '-=0.4')
+      .from(ctaRef.current?.children || [], {
+        y: 20, opacity: 0, duration: 0.5, stagger: 0.15
+      }, '-=0.3')
+      .from(statsRef.current?.children || [], {
+        y: 20, opacity: 0, duration: 0.5, stagger: 0.1
+      }, '-=0.2');
 
-      // Animate table badge if present
       if (badgeRef.current) {
         tl.from(badgeRef.current, {
-          scale: 0,
-          opacity: 0,
-          duration: 0.5,
-          ease: 'back.out(1.7)',
-        }, '-=0.8');
+          scale: 0, opacity: 0, duration: 0.5, ease: 'back.out(1.7)'
+        }, '-=0.6');
       }
 
-      // Animate QR section if present
-      if (qrSectionRef.current) {
-        tl.from(qrSectionRef.current, {
-          y: 50,
-          opacity: 0,
-          duration: 0.8,
-        }, '-=0.3');
-      }
-
-      // Floating food animations with parallax
-      gsap.to(foodLeftRef.current, {
-        y: -30,
-        x: 15,
-        rotation: 5,
-        duration: 3,
-        repeat: -1,
-        yoyo: true,
-        ease: 'sine.inOut',
-      });
-
-      gsap.to(foodRightRef.current, {
-        y: -25,
-        x: -15,
-        rotation: -5,
-        duration: 3.5,
-        repeat: -1,
-        yoyo: true,
-        ease: 'sine.inOut',
-      });
-
-      // Mouse parallax effect
-      const handleMouseMove = (e) => {
-        const { clientX, clientY } = e;
-        const xPos = (clientX / window.innerWidth - 0.5) * 30;
-        const yPos = (clientY / window.innerHeight - 0.5) * 30;
-
-        gsap.to(foodLeftRef.current, {
-          x: -xPos,
-          y: -yPos,
-          duration: 0.5,
-          ease: 'power2.out',
-        });
-
-        gsap.to(foodRightRef.current, {
-          x: xPos,
-          y: yPos,
-          duration: 0.5,
-          ease: 'power2.out',
-        });
+      // subtle parallax on scroll
+      const handleScroll = () => {
+        const y = window.scrollY;
+        if (imgRef.current)   gsap.to(imgRef.current,  { y: y * 0.15, duration: 0.3 });
+        if (decorRef.current) gsap.to(decorRef.current, { y: y * 0.08, duration: 0.3 });
       };
-
-      window.addEventListener('mousemove', handleMouseMove);
-
-      return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-      };
-    }, heroRef);
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      return () => window.removeEventListener('scroll', handleScroll);
+    }, containerRef);
 
     return () => ctx.revert();
   }, [tableNumber]);
 
-  const showWelcomeToast = (table) => {
-    const welcomeMsg = document.createElement('div');
-    welcomeMsg.style.cssText = `
-      position: fixed;
-      top: 100px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: white;
-      padding: 1rem 2rem;
-      border-radius: 50px;
-      font-weight: 600;
-      z-index: 9999;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    `;
-    welcomeMsg.textContent = `✅ Welcome to Table ${table}!`;
-    document.body.appendChild(welcomeMsg);
-    
-    gsap.from(welcomeMsg, {
-      y: -100,
-      opacity: 0,
-      duration: 0.5,
-      ease: 'back.out(1.7)',
-    });
-    
-    setTimeout(() => {
-      gsap.to(welcomeMsg, {
-        y: -100,
-        opacity: 0,
-        duration: 0.5,
-        onComplete: () => {
-          if (document.body.contains(welcomeMsg)) {
-            document.body.removeChild(welcomeMsg);
-          }
-        },
-      });
-    }, 3000);
-  };
-
-  const handleViewMenu = () => {
-    if (onNavigate) {
-      onNavigate('menu');
-    }
-  };
-
-  const handleTrackOrder = () => {
-    if (onNavigate) {
-      onNavigate('my-orders');
-    }
-  };
-
   return (
-    <div className="home-page" ref={heroRef}>
-      {/* Animated Background Food Images */}
-      <div 
-        ref={foodLeftRef}
-        className="bg-food-left" 
-        style={{ backgroundImage: `url(${foodLeft})` }}
-      ></div>
-      <div 
-        ref={foodRightRef}
-        className="bg-food-right" 
-        style={{ backgroundImage: `url(${foodRight})` }}
-      ></div>
+    <div className="home-page" ref={containerRef}>
 
-      {/* Floating decorative elements */}
-      <div className="floating-sparkles">
-        <Sparkles className="sparkle sparkle-1" size={24} />
-        <Sparkles className="sparkle sparkle-2" size={18} />
-        <Sparkles className="sparkle sparkle-3" size={20} />
-      </div>
-      
-      <div className="hero-section">
-        {/* Show table number if available */}
-        {tableNumber && (
-          <div className="table-badge" ref={badgeRef}>
-            <span className="table-badge-text">
-              🍽️ Table {tableNumber}
-            </span>
+      {/* ── Noise texture overlay ── */}
+      <div className="noise-overlay" aria-hidden="true" />
+
+      {/* ── Ambient blobs ── */}
+      <div className="blob blob-1" aria-hidden="true" />
+      <div className="blob blob-2" aria-hidden="true" />
+
+      {/* ── Diagonal accent stripe ── */}
+      <div className="diagonal-stripe" aria-hidden="true" />
+
+      {/* ══════════ MAIN LAYOUT ══════════ */}
+      <div className="hero-layout">
+
+        {/* ─── LEFT: Copy ─── */}
+        <div className="hero-copy">
+
+          {/* Table badge */}
+          {tableNumber && (
+            <div className="table-badge" ref={badgeRef}>
+              <span className="table-badge-dot" />
+              Table {tableNumber} — Ready to Order
+            </div>
+          )}
+
+          {/* Eyebrow */}
+          <div className="hero-eyebrow" ref={eyebrowRef}>
+            <Star size={12} fill="currentColor" />
+            <span>Fine Dining &amp; Takeaway</span>
+            <Star size={12} fill="currentColor" />
           </div>
-        )}
 
-        {/* Main Hero Content */}
-        <div className="hero-content">
-          <h1 className="hero-title" ref={titleRef}>
-            Welcome to
-            <span className="brand-highlight"> DineSmart</span>
+          {/* Headline — three editorial lines */}
+          <h1 className="hero-title">
+            <span className="title-line title-line--serif" ref={titleLine1Ref}>Taste the</span>
+            <span className="title-line title-line--display" ref={titleLine2Ref}>
+              <em>Art of</em>
+            </span>
+            <span className="title-line title-line--bold" ref={titleLine3Ref}>DineSmart</span>
           </h1>
-          
+
+          {/* Subtitle */}
           <p className="hero-subtitle" ref={subtitleRef}>
-            {tableNumber 
-              ? `Your digital menu is ready at Table ${tableNumber}` 
-              : 'Experience the future of dining'}
+            {tableNumber
+              ? `Your digital menu is live. Browse, order and pay — all from this screen.`
+              : `Handcrafted dishes. Seamless ordering. Scan your table QR or explore the full menu below.`}
           </p>
-          
-          <div className="cta-buttons" ref={buttonsRef}>
-            <button 
-              onClick={handleViewMenu}
-              className="cta-btn cta-btn-primary"
+
+          {/* CTAs */}
+          <div className="cta-row" ref={ctaRef}>
+            <button
+              className="cta-primary"
+              onClick={() => onNavigate?.('menu')}
             >
-              <Utensils size={20} />
-              <span>View Menu</span>
-              <ArrowRight size={18} className="arrow-icon" />
+              <span>Explore Menu</span>
+              <span className="cta-arrow"><ArrowRight size={18} /></span>
             </button>
-            
-            <button 
-              onClick={handleTrackOrder}
-              className="cta-btn cta-btn-secondary"
+
+            <button
+              className="cta-ghost"
+              onClick={() => onNavigate?.('reservations')}
             >
-              <Package size={20} />
-              <span>My Orders</span>
+              Reserve a Table
             </button>
+          </div>
+
+          {/* Stats strip */}
+          <div className="stats-strip" ref={statsRef}>
+            <div className="stat">
+              <span className="stat-num">120+</span>
+              <span className="stat-label">Dishes</span>
+            </div>
+            <div className="stat-divider" />
+            <div className="stat">
+              <span className="stat-num">4.9★</span>
+              <span className="stat-label">Rating</span>
+            </div>
+            <div className="stat-divider" />
+            <div className="stat">
+              <span className="stat-num">15 min</span>
+              <span className="stat-label">Avg. Delivery</span>
+            </div>
           </div>
         </div>
 
-        {/* QR Code Instructions */}
-        {!tableNumber && (
-          <div className="qr-section" ref={qrSectionRef}>
-            <div className="qr-content">
-              <div className="qr-icon-wrapper">
-                <div className="qr-icon-bg"></div>
-                <svg className="qr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <rect x="3" y="3" width="7" height="7" strokeWidth="2"/>
-                  <rect x="14" y="3" width="7" height="7" strokeWidth="2"/>
-                  <rect x="3" y="14" width="7" height="7" strokeWidth="2"/>
-                  <rect x="14" y="14" width="7" height="7" strokeWidth="2"/>
-                </svg>
+        {/* ─── RIGHT: Hero image ─── */}
+        <div className="hero-visual">
+
+          {/* Decorative ring / orb behind image */}
+          <div className="visual-decor" ref={decorRef}>
+            <div className="decor-ring" />
+            <div className="decor-glow" />
+          </div>
+
+          {/* Main food image */}
+          <div className="food-frame" ref={imgRef}>
+            <img
+              src={foodRight}
+              alt="Signature dish"
+              className="food-img food-img--main"
+            />
+            {/* Floating pill card */}
+            <div className="float-card float-card--top">
+              <span className="float-card-emoji">🔥</span>
+              <div>
+                <p className="float-card-title">Chef's Special</p>
+                <p className="float-card-sub">Today's featured dish</p>
               </div>
-              <div className="qr-text">
-                <p className="qr-title">Scan QR Code at Your Table</p>
-                <p className="qr-description">
-                  Or browse our menu and place orders directly from here
-                </p>
+            </div>
+            <div className="float-card float-card--bottom">
+              <img src={foodLeft} alt="" className="float-thumb" />
+              <div>
+                <p className="float-card-title">New on the menu</p>
+                <p className="float-card-sub">Seasonal selection</p>
               </div>
             </div>
           </div>
-        )}
+        </div>
+
+      </div>{/* /hero-layout */}
+
+      {/* ── Scroll hint ── */}
+      <div className="scroll-hint" aria-hidden="true">
+        <span className="scroll-line" />
+        <span className="scroll-label">Scroll</span>
       </div>
 
-      {/* Gradient orbs for background effect */}
-      <div className="gradient-orb orb-1"></div>
-      <div className="gradient-orb orb-2"></div>
     </div>
   );
 };
