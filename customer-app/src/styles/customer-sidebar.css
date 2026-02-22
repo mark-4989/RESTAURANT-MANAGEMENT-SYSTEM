@@ -2,11 +2,28 @@
    CUSTOMER SIDEBAR NAVIGATION
    Dual Theme Support - Light & Dark
    Mobile Optimized - 30% Smaller
+   Gold luxury accents — mirrors reservation page
    ============================================ */
 
-/* Mobile Hamburger Button */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,300;1,400;1,600&family=Cinzel:wght@400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+
+/* ── Gold palette (mirrors --res-gold from preorders.css) ── */
+:root {
+  --gold:        #c9a84c;
+  --gold-light:  #e6c97a;
+  --gold-dark:   #9a7a30;
+  --gold-glow:   rgba(201, 168, 76, 0.35);
+  --gold-bg:     rgba(201, 168, 76, 0.08);
+  --gold-bg-md:  rgba(201, 168, 76, 0.14);
+  --gold-border: rgba(201, 168, 76, 0.3);
+}
+
+/* ============================================
+   MOBILE HAMBURGER
+   Kept red — it's the primary brand CTA button
+   ============================================ */
 .mobile-hamburger {
-  display: none; /* Hidden on desktop */
+  display: none;
   position: fixed;
   top: 16px;
   left: 16px;
@@ -33,6 +50,9 @@
   transform: scale(0.95);
 }
 
+/* ============================================
+   SIDEBAR SHELL
+   ============================================ */
 .customer-sidebar {
   position: fixed;
   left: 0;
@@ -40,7 +60,7 @@
   height: 100vh;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-right: 1px solid var(--border-primary);
+  border-right: 1px solid var(--gold-border);
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
@@ -48,65 +68,57 @@
   overflow: hidden;
   transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
               transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Dark Theme Sidebar */
-.customer-sidebar {
-  background: linear-gradient(180deg, 
-    rgba(10, 10, 10, 0.98) 0%, 
-    rgba(20, 20, 20, 0.98) 50%, 
-    rgba(26, 26, 26, 0.98) 100%
+  /* Dark theme — very slight warm undertone toward the gold */
+  background: linear-gradient(180deg,
+    rgba(10, 10, 10,  0.98) 0%,
+    rgba(18, 14,  8,  0.98) 50%,
+    rgba(22, 18, 10,  0.98) 100%
   );
 }
 
-/* Light Theme Sidebar */
+/* Light theme sidebar — warm cream matching reservation page */
 [data-theme="light"] .customer-sidebar {
-  background: linear-gradient(180deg, 
-    rgba(255, 255, 255, 0.98) 0%, 
-    rgba(248, 249, 250, 0.98) 50%, 
-    rgba(241, 243, 245, 0.98) 100%
+  background: linear-gradient(180deg,
+    rgba(255, 253, 248, 0.99) 0%,
+    rgba(250, 248, 244, 0.99) 50%,
+    rgba(245, 242, 236, 0.99) 100%
   );
-  border-right: 1px solid rgba(220, 38, 38, 0.15);
+  border-right: 1px solid rgba(201, 168, 76, 0.2);
 }
 
-.customer-sidebar.expanded {
-  width: 280px;
-}
+.customer-sidebar.expanded  { width: 280px; }
+.customer-sidebar.collapsed { width: 80px;  }
 
-.customer-sidebar.collapsed {
-  width: 80px;
-}
+.toggle-btn.desktop-only { display: flex; }
 
-/* Desktop Toggle Button (hidden on mobile) */
-.toggle-btn.desktop-only {
-  display: flex;
-}
-
-/* ========== HEADER ========== */
+/* ============================================
+   HEADER
+   ============================================ */
 .sidebar-header {
   padding: 24px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-primary);
+  border-bottom: 1px solid var(--gold-border);
   position: relative;
   overflow: hidden;
 }
 
+/* Gold shimmer sweep */
 .sidebar-header::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    rgba(220, 38, 38, 0.05) 50%, 
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(201, 168, 76, 0.07) 50%,
     transparent 100%);
-  animation: shimmer 3s ease-in-out infinite;
+  animation: shimmer 4s ease-in-out infinite;
 }
 
 @keyframes shimmer {
   0%, 100% { transform: translateX(-100%); }
-  50% { transform: translateX(100%); }
+  50%       { transform: translateX(100%);  }
 }
 
 .logo-section {
@@ -116,6 +128,7 @@
   overflow: hidden;
 }
 
+/* Logo icon — kept red, it's the brand mark */
 .logo-icon {
   min-width: 48px;
   height: 48px;
@@ -127,6 +140,8 @@
   box-shadow: 0 4px 16px rgba(220, 38, 38, 0.3);
   transition: transform 0.3s ease;
   color: #ffffff;
+  position: relative;
+  z-index: 1;
 }
 
 .customer-sidebar.expanded .logo-icon:hover {
@@ -146,10 +161,13 @@
   pointer-events: none;
 }
 
+/* DineSmart — Cinzel font, gold gradient, matches reservation page header */
 .logo-text h2 {
-  font-size: 20px;
-  font-weight: 700;
-  background: var(--gradient-primary);
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, var(--gold-dark) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -157,21 +175,25 @@
   line-height: 1.2;
 }
 
+/* "Order & Dine" — DM Sans, gold-tinted subtle */
 .logo-text span {
-  font-size: 11px;
-  color: var(--text-tertiary);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  color: var(--gold);
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.2em;
+  opacity: 0.7;
 }
 
+/* Collapse/expand toggle — gold */
 .toggle-btn {
   min-width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: rgba(220, 38, 38, 0.1);
-  border: 1px solid var(--border-primary);
-  color: var(--text-primary);
+  background: var(--gold-bg);
+  border: 1px solid var(--gold-border);
+  color: var(--gold);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -182,9 +204,10 @@
 }
 
 .toggle-btn:hover {
-  background: rgba(220, 38, 38, 0.2);
-  border-color: var(--brand-primary);
+  background: var(--gold-bg-md);
+  border-color: var(--gold);
   transform: scale(1.05);
+  box-shadow: 0 0 12px var(--gold-glow);
 }
 
 .toggle-icon {
@@ -194,7 +217,9 @@
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ========== NAVIGATION ========== */
+/* ============================================
+   NAVIGATION
+   ============================================ */
 .sidebar-nav {
   flex: 1;
   padding: 16px 8px;
@@ -202,18 +227,15 @@
   overflow-x: hidden;
 }
 
-.sidebar-nav::-webkit-scrollbar {
-  width: 4px;
-}
-
+.sidebar-nav::-webkit-scrollbar { width: 4px; }
 .sidebar-nav::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
+  background: var(--gold-border);
   border-radius: 2px;
 }
 
 .nav-item {
   position: relative;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   cursor: pointer;
   border-radius: 12px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -222,61 +244,60 @@
 }
 
 @keyframes slideInNav {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0);     }
 }
 
 .nav-item-content {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 14px 16px;
+  padding: 13px 16px;
   border-radius: 12px;
   position: relative;
   overflow: hidden;
   transition: all 0.3s ease;
 }
 
+/* Hover — gold wash */
 .nav-item:hover .nav-item-content {
-  background: rgba(220, 38, 38, 0.1);
+  background: var(--gold-bg);
 }
 
 [data-theme="light"] .nav-item:hover .nav-item-content {
-  background: rgba(220, 38, 38, 0.08);
+  background: rgba(201, 168, 76, 0.06);
 }
 
+/* Active — gold border + gold tinted bg */
 .nav-item.active .nav-item-content {
-  background: linear-gradient(135deg, 
-    rgba(220, 38, 38, 0.2) 0%, 
-    rgba(239, 68, 68, 0.15) 100%
+  background: linear-gradient(135deg,
+    rgba(201, 168, 76, 0.15) 0%,
+    rgba(230, 201, 122, 0.08) 100%
   );
-  border: 1px solid rgba(220, 38, 38, 0.3);
+  border: 1px solid var(--gold-border);
 }
 
 [data-theme="light"] .nav-item.active .nav-item-content {
-  background: linear-gradient(135deg, 
-    rgba(220, 38, 38, 0.15) 0%, 
-    rgba(239, 68, 68, 0.1) 100%
+  background: linear-gradient(135deg,
+    rgba(201, 168, 76, 0.1) 0%,
+    rgba(230, 201, 122, 0.05) 100%
   );
+  border: 1px solid rgba(201, 168, 76, 0.22);
 }
 
+/* Active left-edge gold bar */
 .nav-item.active .nav-item-content::before {
   content: '';
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
-  width: 4px;
-  background: var(--gradient-primary);
-  border-radius: 0 4px 4px 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--gold-light), var(--gold-dark));
+  border-radius: 0 3px 3px 0;
 }
 
+/* Icon */
 .nav-icon {
   min-width: 24px;
   height: 24px;
@@ -289,21 +310,24 @@
 
 .nav-item:hover .nav-icon {
   transform: scale(1.1);
-  color: var(--brand-primary);
+  color: var(--gold);
 }
 
 .nav-item.active .nav-icon {
   transform: scale(1.15);
-  color: var(--brand-primary);
-  filter: drop-shadow(0 0 8px rgba(220, 38, 38, 0.5));
+  color: var(--gold);
+  filter: drop-shadow(0 0 6px var(--gold-glow));
 }
 
+/* Label — Cormorant Garamond for luxury serif feel */
 .nav-label {
-  font-size: 15px;
-  font-weight: 500;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--text-secondary);
   white-space: nowrap;
   transition: all 0.3s ease;
+  letter-spacing: 0.01em;
 }
 
 .customer-sidebar.collapsed .nav-label {
@@ -311,34 +335,33 @@
   pointer-events: none;
 }
 
-.nav-item.active .nav-label {
-  color: var(--text-primary);
-  font-weight: 600;
+.nav-item:hover .nav-label {
+  color: var(--gold);
 }
 
+.nav-item.active .nav-label {
+  color: var(--gold);
+  font-style: italic;
+}
+
+/* Active pulse dot — gold */
 .active-indicator {
   position: absolute;
   right: 16px;
   width: 6px;
   height: 6px;
-  background: var(--gradient-primary);
+  background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
   border-radius: 50%;
-  box-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
-  animation: pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 8px var(--gold-glow);
+  animation: pulse 2.5s ease-in-out infinite;
 }
 
 @keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.7;
-  }
+  0%, 100% { transform: scale(1);   opacity: 1;   }
+  50%       { transform: scale(1.3); opacity: 0.6; }
 }
 
-/* Tooltip for collapsed state */
+/* Tooltip — gold border */
 .nav-tooltip {
   position: absolute;
   left: 100%;
@@ -346,17 +369,18 @@
   transform: translateY(-50%) translateX(8px);
   background: var(--bg-elevated);
   color: var(--text-primary);
-  padding: 8px 16px;
+  padding: 7px 14px;
   border-radius: 8px;
-  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
   z-index: 1001;
-  border: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--gold-border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(201, 168, 76, 0.08);
 }
 
 .customer-sidebar.collapsed .nav-item:hover .nav-tooltip {
@@ -371,31 +395,34 @@
   top: 50%;
   transform: translateY(-50%);
   border: 6px solid transparent;
-  border-right-color: var(--bg-elevated);
+  border-right-color: var(--gold-border);
 }
 
-/* ========== FOOTER ========== */
+/* ============================================
+   FOOTER
+   ============================================ */
 .sidebar-footer {
   padding: 16px;
-  border-top: 1px solid var(--border-primary);
-  background: rgba(220, 38, 38, 0.03);
+  border-top: 1px solid var(--gold-border);
+  background: rgba(201, 168, 76, 0.02);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 [data-theme="light"] .sidebar-footer {
-  background: rgba(220, 38, 38, 0.02);
+  background: rgba(201, 168, 76, 0.03);
+  border-top-color: rgba(201, 168, 76, 0.18);
 }
 
-/* Theme Toggle */
+/* Theme toggle — gold */
 .theme-toggle-sidebar {
   width: 100%;
-  padding: 12px;
+  padding: 11px 12px;
   border-radius: 12px;
-  background: rgba(220, 38, 38, 0.1);
-  border: 1px solid var(--border-primary);
-  color: var(--text-primary);
+  background: var(--gold-bg);
+  border: 1px solid var(--gold-border);
+  color: var(--gold);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -404,9 +431,10 @@
 }
 
 .theme-toggle-sidebar:hover {
-  background: rgba(220, 38, 38, 0.15);
-  border-color: var(--brand-primary);
+  background: var(--gold-bg-md);
+  border-color: var(--gold);
   transform: translateY(-1px);
+  box-shadow: 0 4px 14px var(--gold-glow);
 }
 
 .theme-icon {
@@ -418,43 +446,46 @@
 }
 
 .theme-label {
-  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   white-space: nowrap;
 }
 
-.customer-sidebar.collapsed .theme-label {
-  display: none;
-}
+.customer-sidebar.collapsed .theme-label { display: none; }
 
-/* User Profile */
+/* User profile card — gold */
 .user-profile {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
+  padding: 11px 12px;
   border-radius: 12px;
-  background: rgba(220, 38, 38, 0.1);
-  border: 1px solid var(--border-primary);
+  background: var(--gold-bg);
+  border: 1px solid var(--gold-border);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .user-profile:hover {
-  background: rgba(220, 38, 38, 0.15);
-  border-color: var(--brand-primary);
+  background: var(--gold-bg-md);
+  border-color: var(--gold);
+  box-shadow: 0 4px 14px var(--gold-glow);
 }
 
+/* Avatar — gold gradient (same as reservation page active step) */
 .user-avatar {
   min-width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: var(--gradient-primary);
+  background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
-  color: #ffffff;
+  box-shadow: 0 2px 10px var(--gold-glow);
+  color: #1a1208;  /* dark text for contrast on gold */
 }
 
 .user-info {
@@ -469,24 +500,32 @@
   pointer-events: none;
 }
 
+/* "My Account" — Cormorant italic gold */
 .user-name {
-  font-size: 14px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary);
+  font-style: italic;
+  color: var(--gold);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/* "Customer" subtitle — DM Sans small caps */
 .user-role {
-  font-size: 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--text-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Sign In Button */
+/* Sign In — red CTA intentionally kept */
 .signin-btn {
   width: 100%;
   padding: 12px;
@@ -494,6 +533,7 @@
   border: none;
   border-radius: 10px;
   color: #ffffff;
+  font-family: 'DM Sans', sans-serif;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -510,27 +550,25 @@
   box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
 }
 
-.signin-btn-collapsed {
-  padding: 12px;
-  gap: 0;
-}
+.signin-btn-collapsed { padding: 12px; gap: 0; }
 
-/* Clerk User Button Wrapper */
+/* Clerk user button wrapper — gold tint */
 .clerk-user-button {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 8px;
-  background: rgba(220, 38, 38, 0.1);
-  border: 1px solid var(--border-primary);
+  background: var(--gold-bg);
+  border: 1px solid var(--gold-border);
   border-radius: 10px;
   transition: all 0.3s ease;
 }
 
 .clerk-user-button:hover {
-  background: rgba(220, 38, 38, 0.15);
-  border-color: var(--brand-primary);
+  background: var(--gold-bg-md);
+  border-color: var(--gold);
+  box-shadow: 0 4px 14px var(--gold-glow);
 }
 
 .clerk-user-button-collapsed {
@@ -540,177 +578,80 @@
   padding: 8px;
 }
 
-/* ========== MAIN CONTENT ADJUSTMENT ========== */
+/* ============================================
+   MAIN CONTENT ADJUSTMENT
+   ============================================ */
 .main-content-customer {
   transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 100vh;
   padding: 24px;
 }
 
-.main-content-customer.sidebar-expanded {
-  margin-left: 280px;
-}
+.main-content-customer.sidebar-expanded  { margin-left: 280px; }
+.main-content-customer.sidebar-collapsed { margin-left: 80px;  }
 
-.main-content-customer.sidebar-collapsed {
-  margin-left: 80px;
-}
-
-/* ========== MOBILE RESPONSIVE (30% SMALLER) ========== */
+/* ============================================
+   MOBILE RESPONSIVE — 30% SMALLER
+   ============================================ */
 @media (max-width: 768px) {
-  /* Show hamburger button */
-  .mobile-hamburger {
-    display: flex;
-  }
+  .mobile-hamburger         { display: flex; }
+  .toggle-btn.desktop-only  { display: none; }
 
-  /* Hide desktop toggle */
-  .toggle-btn.desktop-only {
-    display: none;
-  }
+  .customer-sidebar.expanded  { width: 196px; transform: translateX(0);    }
+  .customer-sidebar.collapsed { width: 196px; transform: translateX(-100%); }
 
-  /* Mobile sidebar - 30% smaller */
-  .customer-sidebar.expanded {
-    width: 196px; /* 280px - 30% = 196px */
-    transform: translateX(0);
-  }
-  
-  .customer-sidebar.collapsed {
-    width: 196px; /* Same width but hidden */
-    transform: translateX(-100%);
-  }
+  .sidebar-header       { padding: 16px 12px; }
+  .logo-icon            { min-width: 40px; height: 40px; }
+  .logo-icon svg        { width: 22px; height: 22px; }
+  .logo-text h2         { font-size: 15px; }
+  .logo-text span       { font-size: 9px; }
 
-  /* Adjust header padding */
-  .sidebar-header {
-    padding: 16px 12px;
-  }
+  .sidebar-nav          { padding: 12px 6px; }
+  .nav-item-content     { padding: 10px 12px; gap: 12px; }
+  .nav-icon svg         { width: 18px; height: 18px; }
+  .nav-label            { font-size: 14px; }
 
-  /* Smaller logo */
-  .logo-icon {
-    min-width: 40px;
-    height: 40px;
-  }
+  .sidebar-footer       { padding: 12px; gap: 8px; }
+  .theme-toggle-sidebar { padding: 10px; gap: 10px; }
+  .theme-icon svg       { width: 16px; height: 16px; }
+  .theme-label          { font-size: 11px; }
 
-  .logo-icon svg {
-    width: 22px;
-    height: 22px;
-  }
+  .user-avatar          { min-width: 32px; height: 32px; }
+  .user-avatar svg      { width: 16px; height: 16px; }
+  .user-name            { font-size: 13px; }
+  .user-role            { font-size: 9px; }
+  .signin-btn           { padding: 10px; font-size: 12px; }
 
-  .logo-text h2 {
-    font-size: 16px;
-  }
+  .nav-tooltip          { display: none; }
 
-  .logo-text span {
-    font-size: 9px;
-  }
-
-  /* Adjust navigation padding */
-  .sidebar-nav {
-    padding: 12px 6px;
-  }
-
-  .nav-item-content {
-    padding: 10px 12px;
-    gap: 12px;
-  }
-
-  .nav-icon svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .nav-label {
-    font-size: 13px;
-  }
-
-  /* Adjust footer */
-  .sidebar-footer {
-    padding: 12px;
-    gap: 8px;
-  }
-
-  .theme-toggle-sidebar {
-    padding: 10px;
-    gap: 10px;
-  }
-
-  .theme-icon svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  .theme-label {
-    font-size: 12px;
-  }
-
-  .user-avatar {
-    min-width: 32px;
-    height: 32px;
-  }
-
-  .user-avatar svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  .user-name {
-    font-size: 12px;
-  }
-
-  .user-role {
-    font-size: 10px;
-  }
-
-  .signin-btn {
-    padding: 10px;
-    font-size: 12px;
-  }
-
-  /* No tooltips on mobile */
-  .nav-tooltip {
-    display: none;
-  }
-
-  /* Main content adjustment for mobile */
-  .main-content-customer.sidebar-expanded {
-    margin-left: 0;
-    padding: 80px 16px 16px; /* Add top padding for hamburger */
-  }
-  
+  .main-content-customer.sidebar-expanded,
   .main-content-customer.sidebar-collapsed {
     margin-left: 0;
-    padding: 80px 16px 16px; /* Add top padding for hamburger */
-  }
-}
-
-/* ========== SMOOTH ANIMATIONS ========== */
-@keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.nav-item {
-  animation: fadeInScale 0.3s ease-out backwards;
-}
-
-/* Smooth slide transition for mobile */
-@media (max-width: 768px) {
-  .customer-sidebar {
-    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.3);
+    padding: 80px 16px 16px;
   }
 
+  .customer-sidebar          { box-shadow: 2px 0 12px rgba(0, 0, 0, 0.3); }
   .customer-sidebar.expanded {
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.45),
+                2px 0 0   rgba(201, 168, 76, 0.15);
   }
 }
 
-/* ========== NOTIFICATION BADGES (NEW - additions only) ========== */
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1);    }
+}
 
-/* Red bubble on the nav icon in collapsed state */
+.nav-item { animation: fadeInScale 0.3s ease-out backwards; }
+
+/* ============================================
+   NOTIFICATION BADGES
+   ============================================ */
+
+/* Collapsed icon bubble — red (urgency, intentional) */
 .nav-badge {
   position: absolute;
   top: -6px;
@@ -731,26 +672,27 @@
   pointer-events: none;
 }
 
-/* Count pill shown to the right of the label in expanded state */
+/* Expanded count pill — gold, matches sidebar palette */
 .nav-badge-pill {
   margin-left: auto;
   min-width: 20px;
   height: 20px;
   padding: 0 6px;
-  background: linear-gradient(135deg, #dc2626, #ef4444);
-  color: #fff;
+  background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
+  color: #1a1208;
+  font-family: 'DM Sans', sans-serif;
   font-size: 10px;
   font-weight: 800;
   border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+  box-shadow: 0 2px 8px var(--gold-glow);
 }
 
-/* Unread dot on the mobile hamburger button when sidebar is closed */
+/* Mobile hamburger unread dot — red alert, intentional */
 .hamburger-notif-dot {
-  display: none; /* desktop hidden by default */
+  display: none;
   position: fixed;
   top: 10px;
   left: 46px;
@@ -774,9 +716,6 @@
   to   { transform: scale(1); }
 }
 
-/* Only show hamburger dot on mobile */
 @media (max-width: 768px) {
-  .hamburger-notif-dot {
-    display: flex;
-  }
+  .hamburger-notif-dot { display: flex; }
 }
