@@ -13,6 +13,11 @@
   font-family: 'DM Sans', var(--font-primary), sans-serif;
 }
 
+/* ── Light theme override ── */
+[data-theme="light"] .my-orders-page {
+  background: #faf8f4;
+}
+
 .my-orders-container {
   max-width: 1280px;
   margin: 0 auto;
@@ -51,6 +56,10 @@
   justify-content: center;
   background: var(--gradient-bg-primary);
   gap: 1.5rem;
+}
+
+[data-theme="light"] .loading-container {
+  background: #faf8f4;
 }
 
 .spinner {
@@ -546,15 +555,19 @@
 /* ──────────────────────────────────────────────────────────────
    LIGHT THEME
 ────────────────────────────────────────────────────────────── */
-[data-theme="light"] .order-card        { background: #fff; border-color: rgba(220,38,38,0.12); }
-[data-theme="light"] .order-card-left   { background: rgba(220,38,38,0.04); border-color: rgba(220,38,38,0.1); }
-[data-theme="light"] .order-card-right  { border-color: rgba(220,38,38,0.1); }
+[data-theme="light"] .order-card        { background: #fff; border-color: rgba(0,0,0,0.08); box-shadow: 0 4px 20px rgba(0,0,0,0.07); }
+[data-theme="light"] .order-card:hover  { border-color: #c9a84c; box-shadow: 0 12px 40px rgba(201,168,76,0.15); }
+[data-theme="light"] .order-card-left   { background: rgba(201,168,76,0.04); border-color: rgba(0,0,0,0.07); }
+[data-theme="light"] .order-card-right  { border-color: rgba(0,0,0,0.07); }
 [data-theme="light"] .order-card-center { border-color: transparent; }
-[data-theme="light"] .order-item-chip   { background: #f5f2ec; border-color: rgba(220,38,38,0.15); }
-[data-theme="light"] .footer-item       { background: #fff; border-color: rgba(220,38,38,0.12); }
-[data-theme="light"] .modal-content     { background: #fff; }
-[data-theme="light"] .modal-footer      { background: #faf8f4; }
-[data-theme="light"] .category-pill     { background: rgba(255,255,255,0.9); }
+[data-theme="light"] .order-item-chip   { background: #f5f2ec; border-color: rgba(0,0,0,0.08); color: #4a4a4a; }
+[data-theme="light"] .footer-item       { background: #fff; border-color: rgba(0,0,0,0.07); }
+[data-theme="light"] .modal-content     { background: #fff; border-color: rgba(0,0,0,0.08); }
+[data-theme="light"] .modal-footer      { background: #faf8f4; border-top-color: rgba(0,0,0,0.07); }
+[data-theme="light"] .modal-header      { border-bottom-color: rgba(0,0,0,0.07); }
+[data-theme="light"] .category-pill     { background: rgba(255,255,255,0.92); border-color: rgba(0,0,0,0.1); }
+[data-theme="light"] .no-orders         { background: #fff; border-color: rgba(0,0,0,0.08); }
+[data-theme="light"] .progress-bar-wrap { background: rgba(0,0,0,0.07); }
 
 /* ──────────────────────────────────────────────────────────────
    RESPONSIVE

@@ -11,7 +11,7 @@
 /* ── PAGE ── */
 .menu-page {
   min-height: 100vh;
-  padding: 5rem 1.5rem 4rem;
+  padding: 1.5rem 1.5rem 4rem;
   background: var(--gradient-bg-primary);
   position: relative;
   overflow: hidden;
@@ -69,9 +69,12 @@
 /* GSAP target: .menu-header — fadeUp on mount */
 .menu-header {
   text-align: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
+  padding: 2rem 1rem 1rem;
   position: relative;
   z-index: 1;
+  border-bottom: 1px solid var(--border-tertiary);
+  margin-bottom: 2.5rem;
 }
 
 .menu-title {
@@ -86,6 +89,20 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
   letter-spacing: -0.01em;
+}
+
+.menu-eyebrow {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #c9a84c;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
 }
 
 .menu-subtitle {
@@ -744,4 +761,47 @@
   .menu-item-card { width: 88%; padding: 100px 1rem 1.25rem; border-radius: 22px; }
   .menu-item-name { font-size: 1rem; }
   .category-btn  { padding: 0.55rem 1.1rem; font-size: 0.82rem; }
+}
+/* ──────────────────────────────────────────────────────────────
+   LIGHT THEME OVERRIDES
+────────────────────────────────────────────────────────────── */
+[data-theme="light"] .menu-page {
+  background: #faf8f4;
+  background-image: none;
+}
+
+[data-theme="light"] .menu-header {
+  border-bottom-color: rgba(201, 168, 76, 0.15);
+}
+
+[data-theme="light"] .menu-title {
+  /* gradient-primary is still red — good, keep it */
+}
+
+[data-theme="light"] .search-input {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .search-input:focus {
+  border-color: #c9a84c;
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.1);
+}
+
+[data-theme="light"] .category-filter-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.09);
+  color: #4a4a4a;
+}
+
+[data-theme="light"] .category-filter-btn:hover {
+  border-color: #c9a84c;
+  color: #c9a84c;
+}
+
+[data-theme="light"] .category-filter-btn.active {
+  background: var(--gradient-primary);
+  border-color: transparent;
+  color: #fff;
 }

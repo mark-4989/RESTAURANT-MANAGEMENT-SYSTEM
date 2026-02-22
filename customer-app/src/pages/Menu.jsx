@@ -210,11 +210,12 @@ const Menu = () => {
       <div className="container">
         {/* Header */}
         <div className="menu-header fade-in">
+          <div className="menu-eyebrow">✦ Fine Dining &amp; Takeaway ✦</div>
           <h1 className="menu-title">Our Menu</h1>
           <p className="menu-subtitle">
             {tableNumber 
               ? `Ordering for Table ${tableNumber}` 
-              : 'Discover delicious dishes crafted with care'}
+              : 'Discover handcrafted dishes made with care'}
           </p>
         </div>
 

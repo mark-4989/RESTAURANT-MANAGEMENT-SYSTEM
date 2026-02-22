@@ -456,30 +456,7 @@ const OrderPage = () => {
     return matchesCategory && matchesSearch;
   });
 
-  const btnStyle = (active) => ({
-    padding: '1rem 2rem',
-    background: active ? 'var(--gradient-primary)' : 'rgba(var(--brand-primary-rgb), 0.1)',
-    color: active ? 'var(--text-inverse)' : 'var(--text-secondary)',
-    border: active ? 'none' : '1px solid var(--border-primary)',
-    borderRadius: 'var(--radius-full)',
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'all 0.3s',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem'
-  });
-
-  const inputStyle = {
-    width: '100%',
-    padding: '0.875rem 1rem',
-    border: '1px solid var(--border-primary)',
-    borderRadius: 'var(--radius-md)',
-    background: 'var(--input-bg)',
-    color: 'var(--text-primary)',
-    fontSize: '1rem',
-    marginBottom: '1rem'
-  };
+  // Styles moved to orderpage.css (op-* classes)
 
   const getDecorationIcons = (item) => {
     const spicyIcons = ['🌶️', '🔥', '💥', '⚡'];
@@ -496,59 +473,45 @@ const OrderPage = () => {
   return (
     <div className="order-page">
       <SimpleToast />
-      <div style={{maxWidth: '1600px', margin: '0 auto'}}>
-        
-        <div style={{textAlign: 'center', color: 'var(--text-primary)', marginBottom: '3rem'}}>
-          <h1 style={{fontSize: '3rem', fontWeight: 800, marginBottom: '0.75rem', background: 'linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
-            Place Your Order
-          </h1>
-          <p style={{fontSize: '1.25rem', color: 'var(--text-secondary)'}}>
-            Choose your order type and select from our menu
-          </p>
+      <div className="op-inner">
+
+        <div className="op-header">
+          <h1 className="op-title">Place Your Order</h1>
+          <p className="op-subtitle">Choose your order type and select from our menu</p>
         </div>
 
-        <div style={{display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '3rem', flexWrap: 'wrap'}}>
-          <button onClick={() => setOrderType('pickup')} style={btnStyle(orderType === 'pickup')}>
+        <div className="op-tabs">
+          <button onClick={() => setOrderType('pickup')} className={`op-tab${orderType === 'pickup' ? ' active' : ''}`}>
             <Package size={20} /> Pickup
           </button>
-          <button onClick={() => setOrderType('delivery')} style={btnStyle(orderType === 'delivery')}>
+          <button onClick={() => setOrderType('delivery')} className={`op-tab${orderType === 'delivery' ? ' active' : ''}`}>
             <Truck size={20} /> Delivery
           </button>
-          <button onClick={() => setOrderType('preorder')} style={btnStyle(orderType === 'preorder')}>
+          <button onClick={() => setOrderType('preorder')} className={`op-tab${orderType === 'preorder' ? ' active' : ''}`}>
             <Calendar size={20} /> Pre-Order
           </button>
         </div>
 
-        <div style={{display: 'grid', gridTemplateColumns: window.innerWidth > 1024 ? '2fr 1fr' : '1fr', gap: '2rem'}}>
-          
-          <div>
-            <div style={{marginBottom: '1.5rem', position: 'relative'}}>
-              <Search size={20} style={{position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)'}} />
+        <div className="op-layout">
+
+          <div className="op-menu-col">
+            <div className="op-search-wrap">
+              <Search size={20} className="op-search-icon" />
               <input
                 type="text"
                 placeholder="Search menu..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                style={{...inputStyle, paddingLeft: '3rem', marginBottom: 0}}
+                className="op-search-input"
               />
             </div>
 
-            <div style={{display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', overflowX: 'auto'}}>
+            <div className="op-category-strip">
               {categories.map(cat => (
-                <button 
-                  key={cat} 
-                  onClick={() => setSelectedCategory(cat)} 
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    background: selectedCategory === cat ? 'var(--gradient-primary)' : 'rgba(var(--brand-primary-rgb), 0.1)',
-                    color: selectedCategory === cat ? 'var(--text-inverse)' : 'var(--text-secondary)',
-                    border: selectedCategory === cat ? 'none' : '1px solid var(--border-primary)',
-                    borderRadius: 'var(--radius-full)',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.3s',
-                    whiteSpace: 'nowrap'
-                  }}
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`op-cat-btn${selectedCategory === cat ? ' active' : ''}`}
                 >
                   {cat.charAt(0).toUpperCase() + cat.slice(1)}
                 </button>
@@ -633,38 +596,38 @@ const OrderPage = () => {
             )}
           </div>
 
-          <div style={{display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
-            
-            <div style={{background: 'var(--bg-card)', backdropFilter: 'blur(20px)', borderRadius: '20px', padding: '1.5rem', border: '1px solid var(--border-primary)'}}>
-              <h2 style={{fontSize: '1.3rem', marginBottom: '1rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-                {orderType === 'pickup' ? <><Package size={20} /> Pickup Details</> : 
-                 orderType === 'delivery' ? <><Truck size={20} /> Delivery Details</> : 
+          <div className="op-sidebar-col">
+
+            <div className="op-panel">
+              <h2 className="op-panel-title">
+                {orderType === 'pickup' ? <><Package size={20} /> Pickup Details</> :
+                 orderType === 'delivery' ? <><Truck size={20} /> Delivery Details</> :
                  <><Calendar size={20} /> Pre-Order Details</>}
               </h2>
 
               {orderType === 'pickup' && (
                 <>
-                  <input 
-                    type="date" 
-                    value={orderDetails.pickupDate} 
-                    onChange={e => setOrderDetails({...orderDetails, pickupDate: e.target.value})} 
-                    min={new Date().toISOString().split('T')[0]} 
-                    style={inputStyle} 
+                  <input
+                    type="date"
+                    value={orderDetails.pickupDate}
+                    onChange={e => setOrderDetails({...orderDetails, pickupDate: e.target.value})}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="op-input"
                   />
-                  <input 
-                    type="time" 
-                    value={orderDetails.pickupTime} 
-                    onChange={e => setOrderDetails({...orderDetails, pickupTime: e.target.value})} 
-                    style={inputStyle} 
+                  <input
+                    type="time"
+                    value={orderDetails.pickupTime}
+                    onChange={e => setOrderDetails({...orderDetails, pickupTime: e.target.value})}
+                    className="op-input"
                   />
-                  <div style={{position: 'relative'}}>
-                    <Phone size={18} style={{position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)'}} />
-                    <input 
-                      type="tel" 
-                      placeholder="Phone Number" 
-                      value={orderDetails.pickupPhone} 
-                      onChange={e => setOrderDetails({...orderDetails, pickupPhone: e.target.value})} 
-                      style={{...inputStyle, paddingLeft: '3rem'}} 
+                  <div className="op-input-icon-wrap">
+                    <Phone size={18} className="op-input-icon" />
+                    <input
+                      type="tel"
+                      placeholder="+44 7700 900000"
+                      value={orderDetails.pickupPhone}
+                      onChange={e => setOrderDetails({...orderDetails, pickupPhone: e.target.value})}
+                      className="op-input"
                     />
                   </div>
                 </>
@@ -672,150 +635,116 @@ const OrderPage = () => {
 
               {orderType === 'delivery' && (
                 <>
-                  <div style={{marginBottom: '1rem'}}>
-                    <label style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', color: 'var(--text-primary)', fontWeight: 600}}>
-                      <span style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-                        <MapPin size={16} /> Click on map to drop your pin
-                      </span>
-                      <button
-                        onClick={useCurrentLocation}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          background: 'var(--gradient-primary)',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: 'var(--radius-md)',
-                          fontSize: '0.85rem',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem'
-                        }}
-                      >
-                        <Navigation size={14} /> Use My Location
-                      </button>
-                    </label>
-                    <div 
-                      ref={mapContainer} 
-                      style={{
-                        width: '100%', 
-                        height: '320px', 
-                        borderRadius: '14px', 
-                        overflow: 'hidden', 
-                        border: '2px solid var(--border-primary)',
-                        cursor: 'crosshair',
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
-                      }} 
-                    />
-                    <style>{`
-                      .mapboxgl-popup-content { padding:0!important;border-radius:12px!important;box-shadow:0 8px 30px rgba(0,0,0,0.15)!important;overflow:hidden; }
-                      .mapboxgl-popup-tip { display:none!important; }
-                      .mapboxgl-ctrl-logo { display:none!important; }
-                    `}</style>
+                  <div className="op-map-label">
+                    <span className="op-map-label-left">
+                      <MapPin size={16} /> Click on map to drop your pin
+                    </span>
+                    <button onClick={useCurrentLocation} className="op-location-btn">
+                      <Navigation size={14} /> Use My Location
+                    </button>
                   </div>
+                  <div ref={mapContainer} className="op-map-container" />
+                  <style>{`
+                    .mapboxgl-popup-content { padding:0!important;border-radius:12px!important;box-shadow:0 8px 30px rgba(0,0,0,0.15)!important;overflow:hidden; }
+                    .mapboxgl-popup-tip { display:none!important; }
+                    .mapboxgl-ctrl-logo { display:none!important; }
+                  `}</style>
 
                   {orderDetails.deliveryAddress && (
-                    <div style={{
-                      padding: '0.75rem',
-                      background: 'rgba(16, 185, 129, 0.1)',
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
-                      borderRadius: 'var(--radius-md)',
-                      marginBottom: '1rem',
-                      fontSize: '0.9rem',
-                      color: 'var(--text-primary)'
-                    }}>
+                    <div className="op-address-badge">
                       📍 {orderDetails.deliveryAddress}
                     </div>
                   )}
 
-                  <div style={{position: 'relative'}}>
-                    <Phone size={18} style={{position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)'}} />
-                    <input 
-                      type="tel" 
-                      placeholder="Phone Number" 
-                      value={orderDetails.deliveryPhone} 
-                      onChange={e => setOrderDetails({...orderDetails, deliveryPhone: e.target.value})} 
-                      style={{...inputStyle, paddingLeft: '3rem'}} 
+                  <div className="op-input-icon-wrap">
+                    <Phone size={18} className="op-input-icon" />
+                    <input
+                      type="tel"
+                      placeholder="+44 7700 900000"
+                      value={orderDetails.deliveryPhone}
+                      onChange={e => setOrderDetails({...orderDetails, deliveryPhone: e.target.value})}
+                      className="op-input"
                     />
                   </div>
-                  <input 
-                    type="date" 
-                    value={orderDetails.deliveryDate} 
-                    onChange={e => setOrderDetails({...orderDetails, deliveryDate: e.target.value})} 
-                    min={new Date().toISOString().split('T')[0]} 
-                    style={inputStyle} 
+                  <input
+                    type="date"
+                    value={orderDetails.deliveryDate}
+                    onChange={e => setOrderDetails({...orderDetails, deliveryDate: e.target.value})}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="op-input"
                   />
-                  <input 
-                    type="time" 
-                    value={orderDetails.deliveryTime} 
-                    onChange={e => setOrderDetails({...orderDetails, deliveryTime: e.target.value})} 
-                    style={inputStyle} 
+                  <input
+                    type="time"
+                    value={orderDetails.deliveryTime}
+                    onChange={e => setOrderDetails({...orderDetails, deliveryTime: e.target.value})}
+                    className="op-input"
                   />
                   <textarea
                     placeholder="Delivery instructions (optional)"
                     value={orderDetails.deliveryInstructions}
                     onChange={e => setOrderDetails({...orderDetails, deliveryInstructions: e.target.value})}
-                    style={{...inputStyle, minHeight: '80px', resize: 'vertical'}}
+                    className="op-input"
+                    style={{minHeight: '80px', resize: 'vertical'}}
                   />
                 </>
               )}
 
               {orderType === 'preorder' && (
                 <>
-                  <input 
-                    type="date" 
-                    value={orderDetails.preorderDate} 
-                    onChange={e => setOrderDetails({...orderDetails, preorderDate: e.target.value})} 
-                    min={new Date().toISOString().split('T')[0]} 
-                    style={inputStyle} 
+                  <input
+                    type="date"
+                    value={orderDetails.preorderDate}
+                    onChange={e => setOrderDetails({...orderDetails, preorderDate: e.target.value})}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="op-input"
                   />
-                  <input 
-                    type="time" 
-                    value={orderDetails.preorderTime} 
-                    onChange={e => setOrderDetails({...orderDetails, preorderTime: e.target.value})} 
-                    style={inputStyle} 
+                  <input
+                    type="time"
+                    value={orderDetails.preorderTime}
+                    onChange={e => setOrderDetails({...orderDetails, preorderTime: e.target.value})}
+                    className="op-input"
                   />
-                  <select 
-                    value={orderDetails.preorderType} 
-                    onChange={e => setOrderDetails({...orderDetails, preorderType: e.target.value})} 
-                    style={inputStyle}
+                  <select
+                    value={orderDetails.preorderType}
+                    onChange={e => setOrderDetails({...orderDetails, preorderType: e.target.value})}
+                    className="op-input"
                   >
                     <option value="dine-in">Dine-In</option>
                     <option value="pickup">Pickup</option>
                   </select>
                   {orderDetails.preorderType === 'dine-in' && (
-                    <input 
-                      type="text" 
-                      placeholder="Table Number" 
-                      value={orderDetails.tableNumber} 
-                      onChange={e => setOrderDetails({...orderDetails, tableNumber: e.target.value})} 
-                      style={inputStyle} 
+                    <input
+                      type="text"
+                      placeholder="Table Number"
+                      value={orderDetails.tableNumber}
+                      onChange={e => setOrderDetails({...orderDetails, tableNumber: e.target.value})}
+                      className="op-input"
                     />
                   )}
                   <textarea
                     placeholder="Special instructions (optional)"
                     value={orderDetails.specialInstructions}
                     onChange={e => setOrderDetails({...orderDetails, specialInstructions: e.target.value})}
-                    style={{...inputStyle, minHeight: '80px', resize: 'vertical'}}
+                    className="op-input"
+                    style={{minHeight: '80px', resize: 'vertical'}}
                   />
                 </>
               )}
             </div>
 
-            <div style={{background: 'var(--bg-card)', backdropFilter: 'blur(20px)', borderRadius: '20px', padding: '1.5rem', border: '1px solid var(--border-primary)'}}>
-              <h2 style={{fontSize: '1.3rem', marginBottom: '1rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+            <div className="op-panel">
+              <h2 className="op-panel-title">
                 <ShoppingCart size={20} /> Your Cart ({cart.length})
               </h2>
-              
+
               {cart.length === 0 ? (
-                <div style={{textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)'}}>
-                  <ShoppingCart size={48} style={{margin: '0 auto 1rem', opacity: 0.3}} />
+                <div className="op-cart-empty">
+                  <ShoppingCart size={48} />
                   <p>Your cart is empty</p>
                 </div>
               ) : (
                 <>
-                  <div style={{maxHeight: '300px', overflowY: 'auto', marginBottom: '1rem'}}>
+                  <div className="op-cart-scroll">
                     {cart.map(item => (
                       <div key={item._id} className="cart-item">
                         <img src={item.image} alt={item.name} className="cart-item-image" />
@@ -833,27 +762,27 @@ const OrderPage = () => {
                       </div>
                     ))}
                   </div>
-                  <div style={{borderTop: '1px solid var(--border-primary)', paddingTop: '1rem'}}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--text-secondary)'}}>
+                  <div className="op-cart-totals">
+                    <div className="op-cart-row">
                       <span>Subtotal:</span>
-                      <span style={{fontWeight: 600}}>{formatPrice(subtotal)}</span>
+                      <span>{formatPrice(subtotal)}</span>
                     </div>
-                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--text-secondary)'}}>
-                      <span>Tax (16%):</span>
-                      <span style={{fontWeight: 600}}>{formatPrice(tax)}</span>
+                    <div className="op-cart-row">
+                      <span>Tax (20% VAT):</span>
+                      <span>{formatPrice(tax)}</span>
                     </div>
                     {orderType === 'delivery' && (
-                      <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--text-secondary)'}}>
+                      <div className="op-cart-row">
                         <span>Delivery Fee:</span>
-                        <span style={{fontWeight: 600}}>{formatPrice(deliveryFee)}</span>
+                        <span>{formatPrice(deliveryFee)}</span>
                       </div>
                     )}
-                    <div className="cart-total">
+                    <div className="op-cart-total-row">
                       <span>Total:</span>
                       <span>{formatPrice(total)}</span>
                     </div>
-                    <button className="checkout-btn" onClick={placeOrder}>
-                      <span>Place {orderType === 'pickup' ? 'Pickup' : orderType === 'delivery' ? 'Delivery' : 'Pre-Order'} Order</span>
+                    <button className="op-checkout-btn" onClick={placeOrder}>
+                      Place {orderType === 'pickup' ? 'Pickup' : orderType === 'delivery' ? 'Delivery' : 'Pre-Order'} Order
                     </button>
                   </div>
                 </>
