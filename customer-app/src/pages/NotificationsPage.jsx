@@ -1,7 +1,9 @@
 // customer-app/src/pages/NotificationsPage.jsx  — COMPLETE FILE
 import React, { useState } from 'react';
 import { useNotifications, NOTIFICATION_TYPES } from '../context/NotificationContext';
-import { Bell, BellOff, CheckCheck, Trash2, Filter, Package, ChefHat, CreditCard, Truck, Clock } from 'lucide-react';
+import { Bell, BellOff, CheckCheck, Trash2, Filter, Package, ChefHat, CreditCard, Truck, Clock, UtensilsCrossed, CheckCircle2, XCircle, Navigation, ShoppingBag, CalendarDays } from 'lucide-react';
+import foodBg1 from '../assets/asset3.png';
+import foodBg2 from '../assets/asset5.png';
 import '../styles/notifications.css';
 
 const TYPE_FILTERS = [
@@ -139,6 +141,9 @@ const NotificationsPage = () => {
 
   return (
     <div className="notifications-page">
+      {/* Floating food background images */}
+      <div className="notif-bg-img notif-bg-img-1" style={{ backgroundImage: `url(${foodBg1})` }} />
+      <div className="notif-bg-img notif-bg-img-2" style={{ backgroundImage: `url(${foodBg2})` }} />
       {/* Header */}
       <div className="notif-page-header">
         <div className="notif-header-left">

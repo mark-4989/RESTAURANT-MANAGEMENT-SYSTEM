@@ -11,6 +11,56 @@
   margin: 0 auto;
   padding: 0 1rem 100px;
   min-height: 100vh;
+  position: relative; /* needed so z-index stacking works against fixed bg images */
+}
+
+/* ── FLOATING BACKGROUND FOOD IMAGES ── */
+/* Same technique as menu-bg-left / menu-bg-right in menu.css          */
+/* The JSX renders: <div className="notif-bg-img notif-bg-img-1"       */
+/*   style={{ backgroundImage: `url(${foodBg1})` }} />                 */
+.notif-bg-img {
+  position: fixed;
+  width: 460px;
+  height: 460px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
+  z-index: 0;
+  animation: notifFloat 8s ease-in-out infinite;
+  filter: drop-shadow(0 0 30px rgba(0, 0, 0, 0.2));
+}
+
+.notif-bg-img-1 {
+  left: -60px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.25;
+  mask-image: linear-gradient(to right, rgba(0,0,0,0.8) 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,0.8) 0%, transparent 100%);
+}
+
+.notif-bg-img-2 {
+  right: -60px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.25;
+  mask-image: linear-gradient(to left, rgba(0,0,0,0.8) 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,0.8) 0%, transparent 100%);
+  animation-delay: 1.5s;
+}
+
+@keyframes notifFloat {
+  0%,100% { transform: translateY(-50%) scale(1); }
+  50%     { transform: translateY(-46%) scale(1.04); }
+}
+
+/* Make all content sit above bg images */
+.notif-page-header,
+.notif-filters,
+.notif-list {
+  position: relative;
+  z-index: 1;
 }
 
 /* ── HEADER ── */

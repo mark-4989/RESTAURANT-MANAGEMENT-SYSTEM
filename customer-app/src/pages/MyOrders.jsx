@@ -1,7 +1,11 @@
 // customer-app/src/pages/MyOrders.jsx — LUXURY REDESIGN WITH GSAP
 import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '@clerk/clerk-react';
-import { MapPin, X, Navigation, Phone, Package, Clock, Radio, Truck } from 'lucide-react';
+import { MapPin, X, Navigation, Phone, Package, Clock, Radio, Truck, UtensilsCrossed, ShoppingBag, CalendarDays, LayoutList, CheckCircle2, XCircle, Map } from 'lucide-react';
+import foodBg1 from '../assets/asset3.png';
+import foodBg2 from '../assets/asset6.png';
+import foodBg3 from '../assets/asset8.png';
+import foodBg4 from '../assets/asset9.png';
 import { useNotifications } from '../context/NotificationContext';
 import '../styles/MyOrders.css';
 
@@ -42,6 +46,13 @@ const MyOrders = () => {
       try {
         const { gsap } = await import('gsap');
         const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+        // Animate floating bg images in
+        gsap.fromTo(
+          document.querySelectorAll('.orders-bg-img'),
+          { opacity: 0, scale: 0.85 },
+          { opacity: 'var(--target-opacity, 0.18)', scale: 1, duration: 1.4, stagger: 0.2, ease: 'power2.out' }
+        );
 
         if (headerRef.current) {
           tl.fromTo(headerRef.current,
@@ -213,7 +224,15 @@ const MyOrders = () => {
     return STATUS_PROGRESS[order.status] ?? 20;
   };
 
-  const getTypeIcon = (type) => ({ 'dine-in':'🍽️', delivery:'🚚', pickup:'🚗', preorder:'📅' }[type] || '📦');
+  const getTypeIcon = (type) => {
+    const icons = {
+      'dine-in': <UtensilsCrossed size={22} strokeWidth={1.8} />,
+      'delivery': <Truck size={22} strokeWidth={1.8} />,
+      'pickup': <ShoppingBag size={22} strokeWidth={1.8} />,
+      'preorder': <CalendarDays size={22} strokeWidth={1.8} />,
+    };
+    return icons[type] || <Package size={22} strokeWidth={1.8} />;
+  };
 
   if (loading) return (
     <div className="loading-container">
@@ -224,26 +243,31 @@ const MyOrders = () => {
 
   return (
     <div className="my-orders-page">
+      {/* Floating food background images */}
+      <div className="orders-bg-img orders-bg-img-1" style={{ backgroundImage: `url(${foodBg1})` }} />
+      <div className="orders-bg-img orders-bg-img-2" style={{ backgroundImage: `url(${foodBg2})` }} />
+      <div className="orders-bg-img orders-bg-img-3" style={{ backgroundImage: `url(${foodBg3})` }} />
+      <div className="orders-bg-img orders-bg-img-4" style={{ backgroundImage: `url(${foodBg4})` }} />
       <div className="my-orders-container">
 
         {/* ── HEADER ── */}
         <div className="my-orders-header" ref={headerRef}>
-          <h1>📦 My Orders</h1>
+          <h1><Package size={28} strokeWidth={1.8} style={{display:"inline",verticalAlign:"middle",marginRight:"0.5rem"}} />My Orders</h1>
           <p>Track all your orders in real time</p>
         </div>
 
         {/* ── CATEGORY PILLS ── */}
         <div className="category-pills" ref={pillsRef}>
           {[
-            { id:'all',      label:'All Orders', icon:'📋', count: orders.length },
-            { id:'dine-in',  label:'Dine-In',    icon:'🍽️', count: dineInOrders.length },
-            { id:'delivery', label:'Delivery',    icon:'🚚', count: deliveryOrders.length },
-            { id:'pickup',   label:'Pickup',      icon:'🚗', count: pickupOrders.length },
-            { id:'preorder', label:'Pre-Orders',  icon:'📅', count: preOrders.length },
+            { id:'all',      label:'All Orders', Icon: LayoutList,    count: orders.length },
+            { id:'dine-in',  label:'Dine-In',    Icon: UtensilsCrossed, count: dineInOrders.length },
+            { id:'delivery', label:'Delivery',    Icon: Truck,         count: deliveryOrders.length },
+            { id:'pickup',   label:'Pickup',      Icon: ShoppingBag,   count: pickupOrders.length },
+            { id:'preorder', label:'Pre-Orders',  Icon: CalendarDays,  count: preOrders.length },
           ].map(c => (
             <button key={c.id} onClick={() => { setSelectedCategory(c.id); setTimeout(animateCards, 50); }}
               className={`category-pill ${selectedCategory === c.id ? 'active' : ''}`}>
-              {c.icon} {c.label} ({c.count})
+              <c.Icon size={15} strokeWidth={2} /> {c.label} ({c.count})
             </button>
           ))}
         </div>
@@ -252,7 +276,7 @@ const MyOrders = () => {
         <div className="orders-list" ref={listRef}>
           {getCategoryOrders().length === 0 ? (
             <div className="no-orders">
-              <div className="no-orders-icon">📭</div>
+              <div className="no-orders-icon"><Package size={48} strokeWidth={1.2} /></div>
               <h3>No orders here yet</h3>
               <p>Start ordering to see your history!</p>
             </div>
@@ -311,21 +335,21 @@ const MyOrders = () => {
 
                         {order.orderType === 'dine-in' && order.tableNumber && (
                           <div className="detail-row">
-                            <span className="detail-label">🍽️ Table</span>
+                            <span className="detail-label"><UtensilsCrossed size={13} style={{display:"inline",marginRight:"4px"}} />Table</span>
                             <span className="detail-value">Table {order.tableNumber}</span>
                           </div>
                         )}
 
                         {order.orderType === 'delivery' && order.deliveryAddress && (
                           <div className="detail-row">
-                            <span className="detail-label">📍 Address</span>
+                            <span className="detail-label"><MapPin size={13} style={{display:"inline",marginRight:"4px"}} />Address</span>
                             <span className="detail-value">{order.deliveryAddress?.substring(0,35)}…</span>
                           </div>
                         )}
 
                         {order.orderType === 'delivery' && order.driverName && (
                           <div className="detail-row">
-                            <span className="detail-label">🚗 Driver</span>
+                            <span className="detail-label"><Truck size={13} style={{display:"inline",marginRight:"4px"}} />Driver</span>
                             <span className="detail-value">{order.driverName}</span>
                           </div>
                         )}
@@ -333,11 +357,11 @@ const MyOrders = () => {
                         {order.orderType === 'pickup' && (
                           <>
                             <div className="detail-row">
-                              <span className="detail-label">📅 Pickup Date</span>
+                              <span className="detail-label"><CalendarDays size={13} style={{display:"inline",marginRight:"4px"}} />Pickup Date</span>
                               <span className="detail-value">{order.pickupDate && new Date(order.pickupDate).toLocaleDateString()}</span>
                             </div>
                             <div className="detail-row">
-                              <span className="detail-label">⏰ Time</span>
+                              <span className="detail-label"><Clock size={13} style={{display:"inline",marginRight:"4px"}} />Time</span>
                               <span className="detail-value">{order.pickupTime}</span>
                             </div>
                           </>
@@ -345,7 +369,7 @@ const MyOrders = () => {
 
                         {order.orderType === 'preorder' && (
                           <div className="detail-row">
-                            <span className="detail-label">📅 Pre-order For</span>
+                            <span className="detail-label"><CalendarDays size={13} style={{display:"inline",marginRight:"4px"}} />Pre-order For</span>
                             <span className="detail-value">
                               {order.preorderDate && new Date(order.preorderDate).toLocaleDateString()} at {order.preorderTime}
                             </span>
@@ -417,8 +441,8 @@ const MyOrders = () => {
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2>🗺️ Live Tracking: {trackingOrder.orderNumber}</h2>
-                <p className="modal-subtitle">📍 {trackingOrder.deliveryAddress}</p>
+                <h2><Map size={20} style={{display:"inline",marginRight:"0.4rem",verticalAlign:"middle"}} />Live Tracking: {trackingOrder.orderNumber}</h2>
+                <p className="modal-subtitle"><MapPin size={13} style={{display:"inline",marginRight:"4px",verticalAlign:"middle"}} />{trackingOrder.deliveryAddress}</p>
               </div>
               <button onClick={() => setTrackingOrder(null)} className="close-modal-btn"><X size={20} /></button>
             </div>
@@ -447,7 +471,7 @@ const MyOrders = () => {
               </div>
               {trackingOrder.deliveryLat && trackingOrder.deliveryLng && (
                 <button onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${trackingOrder.deliveryLat},${trackingOrder.deliveryLng}`, '_blank')} className="google-maps-btn">
-                  🗺️ Open in Google Maps
+                  Open in Google Maps
                 </button>
               )}
             </div>

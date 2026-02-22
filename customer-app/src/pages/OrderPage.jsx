@@ -5,6 +5,9 @@ import { Truck, Package, Calendar, Search, Phone, MapPin, Plus, Minus, Trash2, S
 import { formatPrice } from '../data/menuData';
 import { useNotifications } from '../context/NotificationContext';
 import '../styles/orderpage.css';
+import foodBg1 from '../assets/asset5.png';
+import foodBg2 from '../assets/asset9.png';
+import foodBg3 from '../assets/asset8.png';
 
 // ── Lightweight in-page toast (replaces react-toastify) ─────────────────────
 // Used for cart feedback & validation. Order-event toasts come from NotificationContext.
@@ -472,6 +475,10 @@ const OrderPage = () => {
 
   return (
     <div className="order-page">
+      {/* Floating food background images */}
+      <div className="op-bg-img op-bg-img-1" style={{ backgroundImage: `url(${foodBg1})` }} />
+      <div className="op-bg-img op-bg-img-2" style={{ backgroundImage: `url(${foodBg2})` }} />
+      <div className="op-bg-img op-bg-img-3" style={{ backgroundImage: `url(${foodBg3})` }} />
       <SimpleToast />
       <div className="op-inner">
 

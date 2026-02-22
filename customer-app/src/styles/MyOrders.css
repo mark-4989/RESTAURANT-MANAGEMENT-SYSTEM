@@ -11,6 +11,8 @@
   padding: 2rem 1.5rem 5rem;
   background: var(--gradient-bg-primary);
   font-family: 'DM Sans', var(--font-primary), sans-serif;
+  position: relative;
+  overflow-x: hidden;
 }
 
 /* ── Light theme override ── */
@@ -607,4 +609,77 @@
   .modal-header     { padding: 1.25rem 1.25rem; }
   .modal-footer     { padding: 1.25rem; }
   .footer-grid      { grid-template-columns: 1fr; }
+}
+/* ──────────────────────────────────────────────────────────────
+   FLOATING FOOD BACKGROUND IMAGES (matches Menu.jsx pattern)
+────────────────────────────────────────────────────────────── */
+.orders-bg-img {
+  position: fixed;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
+  z-index: 0;
+  filter: drop-shadow(0 0 40px rgba(0,0,0,0.2));
+}
+
+.orders-bg-img-1 {
+  width: 420px; height: 420px;
+  left: -30px; top: 25%;
+  opacity: 0.18;
+  mask-image: linear-gradient(to right, rgba(0,0,0,0.9) 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,0.9) 0%, transparent 100%);
+  animation: ordersFloat1 8s ease-in-out infinite;
+}
+
+.orders-bg-img-2 {
+  width: 380px; height: 380px;
+  right: -20px; top: 15%;
+  opacity: 0.15;
+  mask-image: linear-gradient(to left, rgba(0,0,0,0.9) 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,0.9) 0%, transparent 100%);
+  animation: ordersFloat2 10s ease-in-out infinite;
+}
+
+.orders-bg-img-3 {
+  width: 360px; height: 360px;
+  left: -40px; bottom: 10%;
+  opacity: 0.14;
+  mask-image: linear-gradient(to right, rgba(0,0,0,0.85) 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,0.85) 0%, transparent 100%);
+  animation: ordersFloat1 12s ease-in-out infinite 2s;
+}
+
+.orders-bg-img-4 {
+  width: 340px; height: 340px;
+  right: -30px; bottom: 20%;
+  opacity: 0.13;
+  mask-image: linear-gradient(to left, rgba(0,0,0,0.85) 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,0.85) 0%, transparent 100%);
+  animation: ordersFloat2 9s ease-in-out infinite 1s;
+}
+
+@keyframes ordersFloat1 {
+  0%,100% { transform: translateY(0) scale(1); }
+  50%     { transform: translateY(-18px) scale(1.03); }
+}
+
+@keyframes ordersFloat2 {
+  0%,100% { transform: translateY(0) rotate(0deg) scale(1); }
+  50%     { transform: translateY(-14px) rotate(3deg) scale(1.04); }
+}
+
+/* Keep page content above background images */
+.my-orders-container { position: relative; z-index: 1; }
+
+/* Light theme — tone down opacity further on cream bg */
+[data-theme="light"] .orders-bg-img-1 { opacity: 0.1; }
+[data-theme="light"] .orders-bg-img-2 { opacity: 0.09; }
+[data-theme="light"] .orders-bg-img-3 { opacity: 0.08; }
+[data-theme="light"] .orders-bg-img-4 { opacity: 0.08; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .orders-bg-img-1, .orders-bg-img-3 { width: 260px; height: 260px; opacity: 0.1; }
+  .orders-bg-img-2, .orders-bg-img-4 { width: 240px; height: 240px; opacity: 0.09; }
 }

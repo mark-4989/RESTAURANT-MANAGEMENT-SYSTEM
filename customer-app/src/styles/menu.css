@@ -296,11 +296,13 @@
   border: 4px solid rgba(255,255,255,0.12);
 }
 
-.menu-item-wrapper:hover .menu-item-image-circle {
+.menu-item-wrapper:hover .menu-item-image-circle,
+.menu-item-wrapper.expanded .menu-item-image-circle {
   transform: translateX(-50%) translateY(-8px) scale(1.06);
 }
 
-.menu-item-wrapper:hover .menu-item-image {
+.menu-item-wrapper:hover .menu-item-image,
+.menu-item-wrapper.expanded .menu-item-image {
   box-shadow: 0 18px 50px rgba(0,0,0,0.55);
   border-color: rgba(var(--brand-primary-rgb), 0.5);
 }
@@ -325,7 +327,8 @@
   filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
 }
 
-.menu-item-wrapper:hover .decoration-icon { opacity: 0.75; }
+.menu-item-wrapper:hover .decoration-icon,
+.menu-item-wrapper.expanded .decoration-icon { opacity: 0.75; }
 
 .decoration-icon:nth-child(1) { top: 5%;  left: -18%; animation: floatDecor 2.8s ease-in-out infinite; }
 .decoration-icon:nth-child(2) { top: 5%;  right: -18%; animation: floatDecor 2.8s ease-in-out infinite 0.4s; }
@@ -353,7 +356,8 @@
   flex-direction: column;
 }
 
-.menu-item-wrapper:hover .menu-item-card {
+.menu-item-wrapper:hover .menu-item-card,
+.menu-item-wrapper.expanded .menu-item-card {
   transform: translateY(-10px);
   box-shadow: 0 24px 60px rgba(0,0,0,0.5);
   border-color: var(--menu-card-border-hover);
@@ -397,7 +401,7 @@
   background-clip: text;
 }
 
-/* ── HOVER DETAILS ── */
+/* ── HOVER DETAILS — triggered by .expanded class (click), not CSS :hover ── */
 .menu-item-hover-details {
   opacity: 0;
   max-height: 0;
@@ -406,7 +410,7 @@
   transform: translateY(-8px);
 }
 
-.menu-item-wrapper:hover .menu-item-hover-details {
+.menu-item-wrapper.expanded .menu-item-hover-details {
   opacity: 1;
   max-height: 600px;
   transform: translateY(0);
@@ -804,4 +808,19 @@
   background: var(--gradient-primary);
   border-color: transparent;
   color: #fff;
+}
+
+/* ── Kill the backdrop-filter white-wash on light theme cards ── */
+/* backdrop-filter: blur() pulls the white page background through, washing out the red */
+[data-theme="light"] .menu-item-card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 12px 40px rgba(185, 28, 28, 0.35);
+}
+
+[data-theme="light"] .menu-item-wrapper:hover .menu-item-card,
+[data-theme="light"] .menu-item-wrapper.expanded .menu-item-card {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 24px 60px rgba(185, 28, 28, 0.5);
 }

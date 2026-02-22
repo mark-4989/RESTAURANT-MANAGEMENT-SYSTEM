@@ -29,7 +29,14 @@ const Menu = () => {
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [hoveredItem, setHoveredItem] = useState(null);
+  const [expandedItem, setExpandedItem] = useState(null);
+
+  // Close expanded card when clicking outside any card
+  const handlePageClick = (e) => {
+    if (!e.target.closest('.menu-item-wrapper')) {
+      setExpandedItem(null);
+    }
+  };
 
   // Fetch menu items on component mount
   useEffect(() => {
@@ -182,7 +189,7 @@ const Menu = () => {
   };
 
   return (
-    <div className="menu-page">
+    <div className="menu-page" onClick={handlePageClick}>
       {/* Inline toast — replaces react-toastify */}
       {toastMsg && (
         <div style={{
@@ -337,14 +344,13 @@ const Menu = () => {
           <div className="menu-grid fade-in-delay-3">
             {menuItems.map(item => {
               const decorIcons = getDecorationIcons(item);
-              const isHovered = hoveredItem === item._id;
+              const isExpanded = expandedItem === item._id;
 
               return (
                 <div 
                   key={item._id} 
-                  className="menu-item-wrapper"
-                  onMouseEnter={() => setHoveredItem(item._id)}
-                  onMouseLeave={() => setHoveredItem(null)}
+                  className={`menu-item-wrapper ${isExpanded ? 'expanded' : ''}`}
+                  onClick={() => setExpandedItem(isExpanded ? null : item._id)}
                 >
                   {/* Circular Image at Top */}
                   <div className="menu-item-image-circle">
@@ -372,7 +378,7 @@ const Menu = () => {
                     </div>
 
                     {/* Hover Details */}
-                    {isHovered && (
+                    {isExpanded && (
                       <div className="menu-item-hover-details">
                         {/* Description */}
                         <p className="hover-card-description">{item.description}</p>
@@ -403,7 +409,7 @@ const Menu = () => {
                           onClick={(e) => {
                             e.stopPropagation();
                             addToCart(item);
-                            setHoveredItem(null);
+                            setExpandedItem(null);
                           }}
                         >
                           <span>Add to Cart</span>
